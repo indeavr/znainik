@@ -79,7 +79,7 @@ export function NotionPageHeader({
             })
             .filter(Boolean)}
 
-          <a href="https://metareading.com" className="breadcrumb button">Начало</a>
+          {/* <a href="https://metareading.com" className="breadcrumb button">Начало</a> */}
 
           <ToggleThemeButton />
 
