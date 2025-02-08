@@ -2,18 +2,18 @@ import { siteConfig } from './lib/site-config'
 
 export default siteConfig({
   // the site's root Notion page (required)
-  rootNotionPageId: '191d629f9cd280f395f3c663e216be68',
+  rootNotionPageId: '194d629f9cd2801680ebdac6598db9ef?pvs=4',
   // if you want to restrict pages to a single notion workspace (optional)
   // (this should be a Notion ID; see the docs for how to extract this)
   rootNotionSpaceId: null,
 
   // basic site info (required)
-  name: 'Azaira Znainik',
-  domain: 'azaira.bg',
-  author: 'Dara',
+  name: 'Metareading Znainik',
+  domain: 'metareading.com',
+  author: 'DaRa',
 
   // open graph metadata (optional)
-  description: 'Example Next.js Notion Starter Kit Site',
+  description: 'Welcome to the MetaVerse',
 
   // social usernames (optional)
   twitter: 'indeavr',
@@ -54,11 +54,11 @@ export default siteConfig({
   navigationLinks: [
     {
       title: 'About',
-      pageId: 'f1199d37579b41cbabfc0b5174f4256a'
+      pageId: '194d629f9cd281e7a60bd807bceea47b'
     },
     {
       title: 'Contact',
-      pageId: '6a29ebcb935a4f0689fe661ab5f3b8d1'
+      pageId: '194d629f9cd28111a3f4c3a30e26aa1c'
     }
   ]
 })
