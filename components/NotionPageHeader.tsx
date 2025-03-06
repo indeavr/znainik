@@ -79,8 +79,7 @@ export function NotionPageHeader({
             })
             .filter(Boolean)}
 
-          <a href="/about" className="breadcrumb button">Hero</a>
-          <a href="http://azaira.com" className="breadcrumb button">Start</a>
+          <a href="/oracle" className="breadcrumb button">Дао</a>
           
           <ToggleThemeButton />
 
