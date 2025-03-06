@@ -1,5 +1,6 @@
 import Head from 'next/head'
-import { useEffect,useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 import styles from '@/styles/Oracle.module.css'
 
@@ -14,8 +15,8 @@ export default function OraclePage() {
   const getRandomVerse = () => {
     setIsLoading(true)
     // Generate a random number between 1 and 81
-    // const lenght = Object.keys(taoVerses).length;
-    const randomNum = Math.floor(Math.random() * 25) + 1
+    const lenght = Object.keys(taoVerses).length;
+    const randomNum = Math.floor(Math.random() * lenght) + 1
     setVerseNumber(randomNum)
     setVerse(taoVerses[randomNum.toString()])
     setIsLoading(false)
@@ -33,6 +34,12 @@ export default function OraclePage() {
         <meta name="description" content="Get your daily insight from the Tao Te Ching" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
+      <nav className={styles.navigation}>
+        <Link href="/" className={styles.backLink}>
+          ← Към Знайник
+        </Link>
+      </nav>
 
       <main className={styles.main}>
         <h1 className={styles.title}>Дао Дъ Дзин Оракул</h1>

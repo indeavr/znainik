@@ -79,7 +79,7 @@ export function NotionPageHeader({
             })
             .filter(Boolean)}
 
-          <a href="/oracle" className="breadcrumb button">Дао</a>
+          <a href="/dao" className="breadcrumb button">Дао</a>
           
           <ToggleThemeButton />
 
