@@ -12,7 +12,6 @@ import 'styles/global.css'
 import 'styles/notion.css'
 // global style overrides for prism theme (optional)
 import 'styles/prism-theme.css'
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { AppProps } from 'next/app'
 import * as Fathom from 'fathom-client'
 import { useRouter } from 'next/router'
@@ -28,6 +27,7 @@ import {
   posthogConfig,
   posthogId
 } from '@/lib/config'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 // Create a client-side only component wrapper
 const ClientOnly = ({ children }) => {
@@ -82,6 +82,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
       <ClientOnly>
         <Component {...pageProps} />
+        <SpeedInsights />
       </ClientOnly>
     </IconContext.Provider>
   )
