@@ -12,14 +12,13 @@ import 'styles/global.css'
 import 'styles/notion.css'
 // global style overrides for prism theme (optional)
 import 'styles/prism-theme.css'
-import 'flowbite/dist/flowbite.css'
-import "../styles/globals.css";
 
 import type { AppProps } from 'next/app'
 import * as Fathom from 'fathom-client'
 import { useRouter } from 'next/router'
 import posthog from 'posthog-js'
 import * as React from 'react'
+import { IconContext } from '@react-icons/all-files'
 
 import { bootstrap } from '@/lib/bootstrap-client'
 import {
@@ -30,6 +29,22 @@ import {
   posthogId
 } from '@/lib/config'
 
+// Create a client-side only component wrapper
+const ClientOnly = ({ children }) => {
+  const [hasMounted, setHasMounted] = React.useState(false)
+  
+  React.useEffect(() => {
+    setHasMounted(true)
+  }, [])
+  
+  if (!hasMounted) {
+    return null
+  }
+  
+  return <>{children}</>
+}
+
+// Only run bootstrap on client side
 if (!isServer) {
   bootstrap()
 }
@@ -63,5 +78,11 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }, [router.events])
 
-  return <Component {...pageProps} />
+  return (
+    <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
+      <ClientOnly>
+        <Component {...pageProps} />
+      </ClientOnly>
+    </IconContext.Provider>
+  )
 }
