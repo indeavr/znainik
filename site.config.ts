@@ -10,15 +10,15 @@ export default siteConfig({
   // basic site info (required)
   name: 'Azaira Znainik',
   domain: 'azaira.bg',
-  author: 'Dara',
+  author: 'DaRa',
 
   // open graph metadata (optional)
-  description: 'Example Next.js Notion Starter Kit Site',
+  description: 'Живо Знание',
 
   // social usernames (optional)
-  twitter: 'indeavr',
-  github: 'indeavr',
-  linkedin: 'donevskimartin',
+  // twitter: 'indeavr',
+  // github: 'indeavr',
+  // linkedin: 'donevskimartin',
   // mastodon: '#', // optional mastodon profile URL, provides link verification
   // newsletter: '#', // optional newsletter URL
   // youtube: '#', // optional youtube channel name or `channel/UCGbXXXXXXXXXXXXXXXXXXXXXX`
