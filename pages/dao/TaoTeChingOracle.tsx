@@ -160,9 +160,9 @@ export default function TaoTeChingOracle() {
                     exit={{ opacity: 0 }}
                     className={styles.reflectionPrompt}
                   >
-                    <p className={styles.promptText}>
+                    {/* <p className={styles.promptText}>
                       Желаете ли да получите лично размишление за това как този стих може да се отнася към вашата ситуация?
-                    </p>
+                    </p> */}
                     <div className={styles.buttonGroup}>
                       {/* <motion.button
                         whileHover={{ scale: 1.05 }}
