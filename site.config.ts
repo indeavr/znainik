@@ -2,15 +2,15 @@ import { siteConfig } from './lib/site-config'
 
 export default siteConfig({
   // the site's root Notion page (required)
-  rootNotionPageId: '191d629f9cd280f395f3c663e216be68',
+  rootNotionPageId: '1f0d629f9cd2803eb62be95d72d5f3c7',
   // if you want to restrict pages to a single notion workspace (optional)
   // (this should be a Notion ID; see the docs for how to extract this)
   rootNotionSpaceId: null,
 
   // basic site info (required)
-  name: 'Azaira Znainik',
+  name: 'Gene Keys Znainik',
   domain: 'azaira.bg',
-  author: 'DaRa',
+  author: 'MarDaRaTin',
 
   // open graph metadata (optional)
   description: 'Живо Знание',
@@ -52,10 +52,10 @@ export default siteConfig({
   // navigationStyle: 'default'
   navigationStyle: 'custom',
   navigationLinks: [
-    {
-      title: 'Пулс',
-      pageId: '1c5d629f9cd2802bbabcc4216114c5bc'
-    },
+    // {
+    //   title: 'Пулс',
+    //   pageId: '1c5d629f9cd2802bbabcc4216114c5bc'
+    // },
     // {
     //   title: 'Contact',
     //   pageId: '6a29ebcb935a4f0689fe661ab5f3b8d1'
