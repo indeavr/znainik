@@ -81,6 +81,8 @@ export function NotionPageHeader({
 
           {/* <a href="https://metareading.com" className="breadcrumb button">Начало</a> */}
 
+          <a href="/dao" className="breadcrumb button">Дао</a>
+          
           <ToggleThemeButton />
 
           {isSearchEnabled && <Search block={block} title={null} />}

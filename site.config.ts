@@ -16,9 +16,9 @@ export default siteConfig({
   description: 'Welcome to the MetaVerse',
 
   // social usernames (optional)
-  twitter: 'indeavr',
-  github: 'indeavr',
-  linkedin: 'donevskimartin',
+  // twitter: 'indeavr',
+  // github: 'indeavr',
+  // linkedin: 'donevskimartin',
   // mastodon: '#', // optional mastodon profile URL, provides link verification
   // newsletter: '#', // optional newsletter URL
   // youtube: '#', // optional youtube channel name or `channel/UCGbXXXXXXXXXXXXXXXXXXXXXX`
@@ -52,13 +52,14 @@ export default siteConfig({
   // navigationStyle: 'default'
   navigationStyle: 'custom',
   navigationLinks: [
-    // {
-    //   title: 'About',
-    //   pageId: '194d629f9cd281e7a60bd807bceea47b'
-    // },
+
+    {
+      title: 'Пулс',
+      pageId: '1c5d629f9cd2802bbabcc4216114c5bc'
+    },
     // {
     //   title: 'Contact',
-    //   pageId: '194d629f9cd28111a3f4c3a30e26aa1c'
+    //   pageId: '6a29ebcb935a4f0689fe661ab5f3b8d1'
     // }
   ]
 })
