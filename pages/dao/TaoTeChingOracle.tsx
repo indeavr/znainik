@@ -138,7 +138,7 @@ export default function TaoTeChingOracle() {
             Оракул на Дао Дъ Дзин
           </h1>
           <p className={styles.subtitle}>
-            Потърсете мъдрост от древните стихове на Лао Дзъ.
+            Получете мъдрост от древните стихове на Лао Дзъ.
           </p>
         </div>
         
