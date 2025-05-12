@@ -10,10 +10,10 @@ export default siteConfig({
   // basic site info (required)
   name: 'Azaira Znainik',
   domain: 'azaira.bg',
-  author: 'Dara',
+  author: 'MarDaRaTin',
 
   // open graph metadata (optional)
-  description: 'Example Next.js Notion Starter Kit Site',
+  description: 'Живо Знание',
 
   // social usernames (optional)
   // twitter: 'indeavr',
@@ -60,5 +60,6 @@ export default siteConfig({
       title: 'Практики',
       pageId: '6a29ebcb935a4f0689fe661ab5f3b8d1'
     }
+
   ]
 })

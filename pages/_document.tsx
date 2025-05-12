@@ -1,27 +1,32 @@
-import { IconContext } from '@react-icons/all-files'
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 
 export default class MyDocument extends Document {
   render() {
     return (
-      <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
-        <Html lang='en'>
-          <Head>
-            <link rel='shortcut icon' href='/favicon.ico' />
-            <link
-              rel='icon'
-              type='image/png'
-              sizes='32x32'
-              href='favicon.png'
-            />
+      <Html lang='en'>
+        <Head>
+          <link rel='shortcut icon' href='/favicon.ico' />
+          <link
+            rel='icon'
+            type='image/png'
+            sizes='32x32'
+            href='favicon.png'
+          />
 
-            <link rel='manifest' href='/manifest.json' />
-          </Head>
+          <link rel='manifest' href='/manifest.json' />
+          
+          {/* Add preconnect for performance */}
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          
+          {/* Add preload for critical resources */}
+          <link rel="preload" href="/favicon.png" as="image" />
+        </Head>
 
-          <body>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
+        <body>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
 /** Inlined version of noflash.js from use-dark-mode */
 ;(function () {
   var storageKey = 'darkMode'
@@ -57,14 +62,12 @@ export default class MyDocument extends Document {
   }
 })();
 `
-              }}
-            />
-            <Main />
-
-            <NextScript />
-          </body>
-        </Html>
-      </IconContext.Provider>
+            }}
+          />
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
     )
   }
 }
