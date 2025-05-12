@@ -4,9 +4,8 @@ import { useState, useEffect, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaYinYang, FaQuoteLeft, FaQuoteRight, FaRedo } from "react-icons/fa";
 
-// The 81 verses of the Tao Te Ching
-import taoVerses from "./dao.json";
 import styles from "./TaoTeChingOracle.module.css";
+import { taoTeChingText } from "./constants";
 
 export default function TaoTeChingOracle() {
   const [isConsulting, setIsConsulting] = useState(false);
@@ -14,8 +13,54 @@ export default function TaoTeChingOracle() {
   const [showReflection, setShowReflection] = useState(false);
   const [reflection, setReflection] = useState("");
   const [loading, setLoading] = useState(false);
+  const [taoVerses, setTaoVerses] = useState<{[key: string]: string}>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Process the verses directly from the string
+    const processedVerses = processVersesFromString(taoTeChingText);
+    setTaoVerses(processedVerses);
+    setIsLoading(false);
+  }, []);
+
+  // Function to process the verses from a string
+  const processVersesFromString = (content: string): {[key: string]: string} => {
+    const verses: {[key: string]: string} = {};
+    
+    // Updated regex to match the format "## N" or "## N - Title"
+    const verseRegex = /##\s*(\d+)(?:\s*-\s*[^\n]*)?/g;
+    let match;
+    let lastIndex = 0;
+    let lastVerseNumber = "";
+    
+    while ((match = verseRegex.exec(content)) !== null) {
+      // If we already found a verse number before, save the text between the last match and this one
+      if (lastVerseNumber) {
+        // Extract text up to the next heading or end, and remove any "---" dividers
+        let verseText = content.substring(lastIndex, match.index).trim();
+        verseText = verseText.replace(/---\s*$/, '').trim(); // Remove trailing dividers
+        verses[lastVerseNumber] = verseText;
+      }
+      
+      lastVerseNumber = match[1];
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Don't forget the last verse
+    if (lastVerseNumber) {
+      let verseText = content.substring(lastIndex).trim();
+      verseText = verseText.replace(/---\s*$/, '').trim(); // Remove trailing dividers
+      verses[lastVerseNumber] = verseText;
+    }
+    
+    return verses;
+  };
 
   const consultOracle = () => {
+    // Only allow consultation if verses are loaded
+    if (Object.keys(taoVerses).length === 0) return;
+    
     setIsConsulting(true);
     setSelectedVerse(null);
     setShowReflection(false);
@@ -31,6 +76,8 @@ export default function TaoTeChingOracle() {
       setIsConsulting(false);
     }, 389);
   };
+
+  // Add the Tao Te Ching text as a constant
 
   const generateReflection = async () => {
     if (!selectedVerse) return;
@@ -95,132 +142,94 @@ export default function TaoTeChingOracle() {
           </p>
         </div>
         
-        <AnimatePresence mode="wait">
-          {!selectedVerse ? (
-            <motion.div
-              key="oracle-intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className={styles.introContainer}
+        {isLoading ? (
+          <div className={styles.loadingContainer}>
+            <div className={styles.consultingSpinner}></div>
+            <p>Зареждане на стиховете...</p>
+          </div>
+        ) : error ? (
+          <div className={styles.errorContainer}>
+            <p className={styles.errorText}>{error}</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.location.reload()}
+              className={styles.consultButton}
             >
-              <div className={styles.yinYangContainer}>
-                <div className={styles.yinYangGlow}></div>
-                <div className={styles.yinYangSymbol}>
-                  <FaYinYang className={styles.yinYangIcon} />
-                </div>
-              </div>
-              
-              <p className={styles.introText}>
-                Дао Дъ Дзин съдържа 81 стиха с древна мъдрост. Притихтене, задайте намерение и изтеглете стих от ученията на Лао Дзъ.
-              </p>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={consultOracle}
-                className={styles.consultButton}
+              Опитай отново
+            </motion.button>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {!selectedVerse ? (
+              <motion.div
+                key="oracle-intro"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className={styles.introContainer}
               >
-                Изтегли
-              </motion.button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="oracle-result"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className={styles.verseCard}
-            >
-              <div className={styles.verseNumber}>
-                <h2 className={styles.verseNumberText}>
-                  Стих {selectedVerse.number}
-                </h2>
-              </div>
-              
-              <div className={styles.verseContent}>
-                <FaQuoteLeft className={styles.quoteLeft} />
-                <p className={styles.verseText}>
-                  {selectedVerse.text.split('\n').map((line, index) => (
-                    <Fragment key={index}>
-                      {line}
-                      {index < selectedVerse.text.split('\n').length - 1 && <br />}
-                    </Fragment>
-                  ))}
+                <div className={styles.yinYangContainer}>
+                  <div className={styles.yinYangGlow}></div>
+                  <div className={styles.yinYangSymbol}>
+                    <FaYinYang className={styles.yinYangIcon} />
+                  </div>
+                </div>
+                
+                <p className={styles.introText}>
+                  Дао Дъ Дзин съдържа 81 стиха с древна мъдрост. Притихтене, задайте намерение и изтеглете стих от ученията на Лао Дзъ.
                 </p>
-                <FaQuoteRight className={styles.quoteRight} />
-              </div>
-              
-              <AnimatePresence>
-                {!showReflection ? (
-                  <motion.div
-                    key="reflection-prompt"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className={styles.reflectionPrompt}
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={consultOracle}
+                  className={styles.consultButton}
+                >
+                  Изтегли
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="oracle-result"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className={styles.verseCard}
+              >
+                <div className={styles.verseNumber}>
+                  <h2 className={styles.verseNumberText}>
+                    Стих {selectedVerse.number}
+                  </h2>
+                </div>
+                
+                <div className={styles.verseContent}>
+                  <FaQuoteLeft className={styles.quoteLeft} />
+                  <p className={styles.verseText}>
+                    {selectedVerse.text.split('\n').map((line, index) => (
+                      <Fragment key={index}>
+                        {line}
+                        {index < selectedVerse.text.split('\n').length - 1 && <br />}
+                      </Fragment>
+                    ))}
+                  </p>
+                  <FaQuoteRight className={styles.quoteRight} />
+                </div>
+                
+                <div className={styles.buttonGroup}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={resetOracle}
+                    className={styles.consultAgainButton}
                   >
-                    {/* <p className={styles.promptText}>
-                      Желаете ли да получите лично размишление за това как този стих може да се отнася към вашата ситуация?
-                    </p> */}
-                    <div className={styles.buttonGroup}>
-                      {/* <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={generateReflection}
-                        disabled={loading}
-                        className={styles.reflectionButton}
-                      >
-                        {loading ? (
-                          <span className={styles.loadingIndicator}>
-                            <div className={styles.spinner}></div>
-                            Размишлява...
-                          </span>
-                        ) : (
-                          "Потърси размишление"
-                        )}
-                      </motion.button> */}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={resetOracle}
-                        className={styles.consultAgainButton}
-                      >
-                        Изтегли отново
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="reflection-result"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={styles.reflectionSection}
-                  >
-                    <h3 className={styles.reflectionTitle}>
-                      Размишление
-                    </h3>
-                    <div className={styles.reflectionContent}>
-                      <p className={styles.reflectionText}>
-                        {reflection}
-                      </p>
-                    </div>
-                    <div className={styles.buttonContainer}>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={resetOracle}
-                        className={styles.reflectionButton}
-                      >
-                        <FaRedo /> Консултирай се отново
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                    Изтегли отново
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
         
         {isConsulting && (
           <motion.div

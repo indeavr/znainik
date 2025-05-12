@@ -10,7 +10,8 @@ export default siteConfig({
   // basic site info (required)
   name: 'Metareading Znainik',
   domain: 'metareading.com',
-  author: 'DaRa',
+  author: 'MarDaRaTin',
+
 
   // open graph metadata (optional)
   description: 'Welcome to the MetaVerse',

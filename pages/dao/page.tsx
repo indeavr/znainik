@@ -4,22 +4,19 @@ import { useEffect, useState } from 'react'
 
 import styles from '@/styles/Oracle.module.css'
 
-import taoVerses from './dao.json'
-
 export default function OraclePage() {
-  const [verse, setVerse] = useState<string>('')
   const [verseNumber, setVerseNumber] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  // Function to get a random verse
+  // Function to get a random verse number
   const getRandomVerse = () => {
     setIsLoading(true)
     // Generate a random number between 1 and 81
-    const lenght = Object.keys(taoVerses).length;
-    const randomNum = Math.floor(Math.random() * lenght) + 1
+    const randomNum = Math.floor(Math.random() * 81) + 1
     setVerseNumber(randomNum)
-    setVerse(taoVerses[randomNum.toString()])
-    setIsLoading(false)
+    setTimeout(() => {
+      setIsLoading(false)
+    }, 500) // Small delay for loading effect
   }
 
   // Get a random verse on initial load
@@ -55,7 +52,7 @@ export default function OraclePage() {
             <>
               <h2 className={styles.verseNumber}>Номер {verseNumber}</h2>
               <blockquote className={`${styles.verse} whitespace-pre-line`}>
-                {verse}
+                Отворете Дао Дъ Дзин на стих {verseNumber} и съзерцавайте неговата мъдрост.
               </blockquote>
             </>
           )}
