@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaYinYang, FaQuoteLeft, FaQuoteRight, FaRedo } from "react-icons/fa";
 
 import styles from "./TaoTeChingOracle.module.css";
-import { taoTeChingText } from "./constants";
+import { taoTeChingText } from '../../lib/dao/constants';
 
 export default function TaoTeChingOracle() {
   const [isConsulting, setIsConsulting] = useState(false);
