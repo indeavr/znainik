@@ -47,7 +47,7 @@ export default function OraclePage() {
 
         <div className={styles.oracleCard}>
           {isLoading ? (
-            <p>Търсене на мъдрост...</p>
+            <p>Получаване на мъдрост...</p>
           ) : (
             <>
               <h2 className={styles.verseNumber}>Номер {verseNumber}</h2>
