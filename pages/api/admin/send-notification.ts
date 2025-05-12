@@ -95,15 +95,24 @@ export default async function handler(
       body,
       icon: '/favicon.ico',
       badge: '/favicon.ico',
+      url: '/', // Add explicit URL to open
       timestamp: Date.now()
-    })
-
+    });
+    console.log('Sending notification payload:', notificationPayload);
+    
     // Send notifications and track results
     const results = await Promise.allSettled(
-      subscriptions.map(subscription => 
-        webpush.sendNotification(subscription, notificationPayload)
-      )
-    )
+      subscriptions.map(async (subscription) => {
+        try {
+          const result = await webpush.sendNotification(subscription, notificationPayload);
+          console.log('Notification sent successfully to:', subscription.endpoint);
+          return result;
+        } catch (error) {
+          console.error('Error sending to subscription:', subscription.endpoint, error);
+          throw error;
+        }
+      })
+    );
 
     // Count successful notifications
     const successCount = results.filter(r => r.status === 'fulfilled').length

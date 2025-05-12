@@ -11,6 +11,7 @@ export default function AdminPage() {
   const [notificationBody, setNotificationBody] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [sendResult, setSendResult] = useState(null)
+  const [notificationPermission, setNotificationPermission] = useState('')
   const router = useRouter()
 
   const handleLogin = async (e) => {
@@ -92,6 +93,79 @@ export default function AdminPage() {
     }
   }
 
+  const checkNotificationPermission = () => {
+    if (!('Notification' in window)) {
+      return 'Notifications not supported'
+    }
+    return Notification.permission
+  }
+
+  const testLocalNotification = () => {
+    if (!('Notification' in window)) {
+      setError('Notifications are not supported in this browser')
+      return
+    }
+    
+    if (Notification.permission === 'granted') {
+      try {
+        const notification = new Notification('Test Notification', {
+          body: 'This is a test notification from the browser',
+          icon: '/favicon.ico'
+        })
+        
+        notification.onclick = () => {
+          console.log('Notification clicked')
+          notification.close()
+        }
+        
+        setSendResult({
+          success: true,
+          message: 'Browser notification created successfully. Check your system notifications.'
+        })
+      } catch (error) {
+        console.error('Error creating notification:', error)
+        setError(`Error creating notification: ${error.message}`)
+      }
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        setNotificationPermission(permission)
+        if (permission === 'granted') {
+          testLocalNotification()
+        } else {
+          setError('Notification permission denied')
+        }
+      })
+    } else {
+      setError('Notification permission denied. Please enable notifications in your browser settings.')
+    }
+  }
+
+  const updateServiceWorker = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration()
+        if (registration) {
+          await registration.update()
+          setSendResult({
+            success: true,
+            message: 'Service worker updated successfully'
+          })
+        } else {
+          const newRegistration = await navigator.serviceWorker.register('/service-worker.js')
+          setSendResult({
+            success: true,
+            message: 'Service worker registered successfully'
+          })
+        }
+      } else {
+        setError('Service workers not supported in this browser')
+      }
+    } catch (error) {
+      console.error('Error updating service worker:', error)
+      setError(`Error updating service worker: ${error.message}`)
+    }
+  }
+
   useEffect(() => {
     // Check if user is authenticated with token
     const checkAuth = async () => {
@@ -123,6 +197,11 @@ export default function AdminPage() {
     }
 
     checkAuth()
+
+    // Check notification permission
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission)
+    }
   }, [])
 
   return (
@@ -178,8 +257,7 @@ export default function AdminPage() {
               {error && <p className={styles.error}>{error}</p>}
               {sendResult && sendResult.success && (
                 <p className={styles.success}>
-                  Notification sent successfully to {sendResult.count}{' '}
-                  subscribers!
+                  {sendResult.message || `Notification sent successfully to ${sendResult.count} subscribers!`}
                   {sendResult.failed > 0 &&
                     ` (${sendResult.failed} failed deliveries were removed from the subscription list)`}
                 </p>
@@ -222,6 +300,49 @@ export default function AdminPage() {
                 </button>
               </form>
             </section>
+
+            <div className={styles.testNotificationContainer}>
+              <h3>Troubleshooting</h3>
+              
+              <div className={styles.permissionInfo}>
+                <p>Current notification permission: <strong>{notificationPermission}</strong></p>
+                {notificationPermission !== 'granted' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      Notification.requestPermission().then(permission => {
+                        setNotificationPermission(permission)
+                      })
+                    }}
+                    className={styles.secondaryButton}
+                  >
+                    Request Permission
+                  </button>
+                )}
+              </div>
+              
+              <div className={styles.buttonGroup}>
+                <button 
+                  type="button"
+                  onClick={testLocalNotification}
+                  className={styles.secondaryButton}
+                >
+                  Test Browser Notification
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={updateServiceWorker}
+                  className={styles.secondaryButton}
+                >
+                  Update Service Worker
+                </button>
+              </div>
+              
+              <p className={styles.helperText}>
+                These tools help diagnose notification issues. If notifications don't appear, try updating the service worker and checking your browser settings.
+              </p>
+            </div>
           </div>
         )}
       </main>

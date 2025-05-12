@@ -126,3 +126,57 @@
   color: #666;
   margin-bottom: 1.5rem;
 }
+
+
+/* Add these styles to your existing Admin.module.css file */
+
+.testNotificationContainer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eaeaea;
+}
+
+.secondaryButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.secondaryButton:hover {
+  background-color: #e5e5e5;
+}
+
+.helperText {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* Add this to your existing Admin.module.css file */
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.permissionInfo {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #eaeaea;
+}
+
+.permissionInfo p {
+  margin-bottom: 0.5rem;
+}
+
+.permissionInfo strong {
+  font-weight: 600;
+}
