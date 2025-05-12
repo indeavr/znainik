@@ -89,26 +89,28 @@ export default async function handler(
       })
     }
 
-    // Prepare notification payload
+    // In the send-notification API, update the notification sending part:
+    
+    // Prepare notification payload - make it simpler
     const notificationPayload = JSON.stringify({
       title,
       body,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      url: '/', // Add explicit URL to open
       timestamp: Date.now()
     });
+    
     console.log('Sending notification payload:', notificationPayload);
     
-    // Send notifications and track results
+    // Send notifications with better error handling
     const results = await Promise.allSettled(
       subscriptions.map(async (subscription) => {
         try {
+          console.log('Sending to subscription:', subscription.endpoint);
           const result = await webpush.sendNotification(subscription, notificationPayload);
-          console.log('Notification sent successfully to:', subscription.endpoint);
+          console.log('Push service response:', result.statusCode);
           return result;
         } catch (error) {
-          console.error('Error sending to subscription:', subscription.endpoint, error);
+          console.error('Error sending to subscription:', subscription.endpoint);
+          console.error('Error details:', error);
           throw error;
         }
       })

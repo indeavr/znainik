@@ -12,50 +12,42 @@ self.addEventListener('push', function(event) {
         body: data.body,
         icon: '/favicon.ico',
         badge: '/favicon.ico',
-        tag: 'znainik-notification', // Add a tag to group notifications
-        requireInteraction: true, // Make notification persist until user interacts with it
+        tag: 'znainik-notification',
+        renotify: true, // Force notification even if same tag exists
+        requireInteraction: true, // Make notification persist
+        vibrate: [200, 100, 200], // Vibration pattern for mobile
         data: {
-          url: data.url || self.registration.scope
+          url: data.url || self.registration.scope,
+          timestamp: Date.now()
         },
-        timestamp: data.timestamp || Date.now(),
-        actions: [
-          {
-            action: 'open',
-            title: 'Open'
-          }
-        ]
+        timestamp: data.timestamp || Date.now()
       };
       
       console.log('Showing notification with options:', options);
       
-      event.waitUntil(
-        self.registration.showNotification(data.title, options)
-          .then(() => console.log('Notification shown successfully'))
-          .catch(err => {
-            console.error('Error showing notification:', err);
-            // Try a simpler notification as fallback
-            return self.registration.showNotification('New notification', {
-              body: 'You have a new notification'
-            });
-          })
-      );
+      // Use a more direct approach
+      self.registration.showNotification(data.title, options)
+        .then(() => console.log('Notification shown successfully'))
+        .catch(err => {
+          console.error('Error showing notification:', err);
+          // Try a simpler notification as fallback
+          return self.registration.showNotification('New Update', { 
+            body: 'You have a new notification from Знайник'
+          });
+        });
     } catch (e) {
       console.error('Error processing push data:', e);
-      // Try to show a generic notification
-      event.waitUntil(
-        self.registration.showNotification('New notification', {
-          body: 'You have a new notification'
-        })
-      );
+      // Show a generic notification
+      self.registration.showNotification('New Update', {
+        body: 'You have a new notification from Знайник'
+      });
     }
   } else {
     console.log('Push event has no data');
     // Show a generic notification
-    event.waitUntil(
-      self.registration.showNotification('New notification', {
-        body: 'You have a new notification'
-      })
-    );
+    self.registration.showNotification('New Update', {
+      body: 'You have a new notification from Знайник'
+    });
   }
 });
 

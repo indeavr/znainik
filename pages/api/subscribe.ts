@@ -4,7 +4,12 @@ import path from 'path'
 
 // Path to subscriptions file
 const SUBSCRIPTIONS_FILE = path.join(process.cwd(), 'data', 'subscriptions.json')
+
+// Ensure data directory exists
 const DATA_DIR = path.join(process.cwd(), 'data')
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true })
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,48 +21,40 @@ export default async function handler(
   }
 
   try {
-    const { subscription } = req.body
+    const subscription = req.body
 
-    // Validate request
+    // Validate subscription object
     if (!subscription || !subscription.endpoint) {
-      return res.status(400).json({ error: 'Valid subscription object is required' })
-    }
-
-    // Create data directory if it doesn't exist
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-    }
-
-    // Initialize subscriptions file if it doesn't exist
-    if (!fs.existsSync(SUBSCRIPTIONS_FILE)) {
-      fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify([]))
+      return res.status(400).json({ error: 'Invalid subscription data' })
     }
 
     // Read existing subscriptions
-    const subscriptionsRaw = fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf8')
     let subscriptions = []
-    
-    try {
-      subscriptions = JSON.parse(subscriptionsRaw)
-    } catch (e) {
-      // If file is corrupted, start with empty array
-      subscriptions = []
+    if (fs.existsSync(SUBSCRIPTIONS_FILE)) {
+      try {
+        const data = fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf8')
+        subscriptions = JSON.parse(data)
+      } catch (error) {
+        console.error('Error reading subscriptions file:', error)
+        // Continue with empty array if file is corrupted
+      }
     }
 
     // Check if subscription already exists
     const existingIndex = subscriptions.findIndex(
-      sub => sub.endpoint === subscription.endpoint
+      (sub) => sub.endpoint === subscription.endpoint
     )
 
-    // Update or add subscription
-    if (existingIndex >= 0) {
+    if (existingIndex !== -1) {
+      // Update existing subscription
       subscriptions[existingIndex] = subscription
     } else {
+      // Add new subscription
       subscriptions.push(subscription)
     }
 
-    // Save updated subscriptions
-    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions))
+    // Write updated subscriptions back to file
+    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions, null, 2))
 
     return res.status(200).json({ success: true })
   } catch (error) {

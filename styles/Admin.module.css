@@ -180,3 +180,64 @@
 .permissionInfo strong {
   font-weight: 600;
 }
+
+.browserInfo {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #eaeaea;
+}
+
+.browserInfo ul, 
+.browserInfo ol {
+  margin-top: 0.5rem;
+  margin-left: 1.5rem;
+}
+
+.browserInfo li {
+  margin-bottom: 0.5rem;
+}
+
+.mobileBadge {
+  display: inline-block;
+  background-color: #f97316;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  margin-left: 0.5rem;
+  font-weight: 600;
+}
+
+.mobileWarning {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: #fff7ed;
+  border-left: 4px solid #f97316;
+  border-radius: 4px;
+}
+
+.mobileWarning p {
+  margin-bottom: 0.5rem;
+}
+
+.mobileWarning ul {
+  margin-left: 1.5rem;
+}
+
+.noteText {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #3182ce;
+  font-size: 0.875rem;
+}
+
+.noteText code {
+  background-color: #edf2f7;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
