@@ -57,21 +57,6 @@ export default function AdminPage() {
     try {
       const token = localStorage.getItem('adminToken')
 
-      // First check if service worker is registered
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.getRegistration()
-          if (!registration) {
-            // Register service worker if not already registered
-            await navigator.serviceWorker.register('/service-worker.js')
-            console.log('Service worker registered for notifications')
-          }
-        } catch (err) {
-          console.warn('Service worker registration failed:', err)
-          // Continue anyway, as we'll try to send server-side notifications
-        }
-      }
-
       const response = await fetch('/api/admin/send-notification', {
         method: 'POST',
         headers: {
@@ -83,14 +68,6 @@ export default function AdminPage() {
           body: notificationBody
         })
       })
-
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned non-JSON response. Check server logs.');
-      }
 
       const result = await response.json()
 
@@ -110,7 +87,7 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Error sending notification:', err)
-      setError(`Failed to send notification: ${err.message}`)
+      setError('Failed to send notification')
     } finally {
       setIsSending(false)
     }
@@ -190,17 +167,10 @@ export default function AdminPage() {
   }
 
   const getBrowserInfo = () => {
-    if (typeof window === 'undefined') return { browserName: 'Server rendering', isMobile: false };
+    if (typeof window === 'undefined') return 'Server rendering';
     
     const userAgent = navigator.userAgent;
     let browserName = "Unknown";
-    let isMobile = false;
-    let isIncognito = false;
-    
-    // Check if mobile
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)) {
-      isMobile = true;
-    }
     
     if (userAgent.match(/chrome|chromium|crios/i)) {
       browserName = "Chrome";
@@ -214,7 +184,7 @@ export default function AdminPage() {
       browserName = "Edge";
     }
     
-    return { browserName, isMobile, isIncognito };
+    return browserName;
   };
 
   const sendDirectNotification = async () => {
@@ -231,14 +201,6 @@ export default function AdminPage() {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
       });
-      
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned non-JSON response. Check server logs.');
-      }
       
       const result = await response.json();
       
@@ -258,9 +220,6 @@ export default function AdminPage() {
     }
   };
 
-  // Apply the same JSON parsing safety to other fetch calls
-  // Remove the duplicate handleSendNotification function that appears later in the file
-  
   useEffect(() => {
     // Check if user is authenticated with token
     const checkAuth = async () => {
@@ -443,23 +402,10 @@ export default function AdminPage() {
               </div>
               
               <div className={styles.browserInfo}>
-                <p>Browser detected: <strong>{getBrowserInfo().browserName}</strong> {getBrowserInfo().isMobile && <span className={styles.mobileBadge}>Mobile</span>}</p>
-                
-                {getBrowserInfo().isMobile && (
-                  <div className={styles.mobileWarning}>
-                    <p><strong>Note:</strong> Push notifications have limited support on mobile devices:</p>
-                    <ul>
-                      <li><strong>iOS (Safari):</strong> Web push notifications are not supported on iOS Safari</li>
-                      <li><strong>iOS (Chrome/Firefox):</strong> These browsers use Safari's engine on iOS, so notifications won't work</li>
-                      <li><strong>Android Chrome:</strong> Notifications should work if the site is added to home screen</li>
-                    </ul>
-                  </div>
-                )}
-                
+                <p>Browser detected: <strong>{getBrowserInfo()}</strong></p>
                 <p>Common issues by browser:</p>
                 <ul>
                   <li><strong>Chrome:</strong> Check chrome://settings/content/notifications</li>
-                  <li><strong>Chrome Incognito:</strong> Push notifications are <em>not supported</em> in incognito mode</li>
                   <li><strong>Safari:</strong> Check System Preferences &gt; Notifications &gt; Safari</li>
                   <li><strong>Firefox:</strong> Check about:preferences#privacy &gt; Permissions &gt; Notifications</li>
                 </ul>
@@ -467,11 +413,9 @@ export default function AdminPage() {
                 <ol>
                   <li>Restart your browser</li>
                   <li>Check if notifications are blocked in system settings</li>
-                  <li>Try in a regular (non-incognito) window</li>
+                  <li>Try in a private/incognito window</li>
                   <li>Try a different browser</li>
-                  {getBrowserInfo().isMobile && <li>On Android, try adding the site to your home screen first</li>}
                 </ol>
-                <p className={styles.noteText}>Note: If you see <code>AbortError: Registration failed - permission denied</code> in incognito mode, this is expected behavior as Chrome blocks push notifications in private browsing.</p>
               </div>
               
               <p className={styles.helperText}>
