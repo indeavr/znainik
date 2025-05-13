@@ -206,10 +206,10 @@ export default function TaoTeChingOracle() {
                 <div className={styles.verseContent}>
                   <FaQuoteLeft className={styles.quoteLeft} />
                   <p className={styles.verseText}>
-                    {selectedVerse.text.split('\n').map((line, index) => (
+                    {selectedVerse.text.split('\n').filter(line => line.trim() !== '').map((line, index, array) => (
                       <Fragment key={index}>
                         {line}
-                        {index < selectedVerse.text.split('\n').length - 1 && <br />}
+                        {index < array.length - 1 && <br />}
                       </Fragment>
                     ))}
                   </p>
