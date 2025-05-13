@@ -209,7 +209,7 @@ export default function TaoTeChingOracle() {
                     {selectedVerse.text.split('\n').map((line, index) => (
                       <Fragment key={index}>
                         {line}
-                        {index < selectedVerse.text.split('\n').length - 1 && <br />}
+                        {/* {index < selectedVerse.text.split('\n').length - 1 && <br />} */}
                       </Fragment>
                     ))}
                   </p>
