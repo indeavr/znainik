@@ -13,7 +13,7 @@ export default siteConfig({
   author: 'MarDaRaTin',
 
   // open graph metadata (optional)
-  description: 'Живо Знание',
+  description: 'Загубеният блог за какво е да си душа с тяло',
 
   // social usernames (optional)
   // twitter: 'indeavr',

@@ -1,21 +1,51 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaYinYang, FaQuoteLeft, FaQuoteRight, FaRedo } from "react-icons/fa";
+import { AnimatePresence, motion } from "framer-motion";
+import { Fragment, useEffect, useState } from "react";
+import { FaQuoteLeft, FaQuoteRight, FaYinYang } from "react-icons/fa";
 
-import styles from "./TaoTeChingOracle.module.css";
 import { taoTeChingText } from '../../lib/dao/constants';
+import styles from "./TaoTeChingOracle.module.css";
+
+// Function to process the verses from a string
+const processVersesFromString = (content: string): {[key: string]: string} => {
+  const verses: {[key: string]: string} = {};
+  
+  // Updated regex to match the format "## N" or "## N - Title"
+  // eslint-disable-next-line security/detect-unsafe-regex
+  const verseRegex = /##\s*(\d+)(?:\s*-\s*[^\n]*)?/g;
+  let match;
+  let lastIndex = 0;
+  let lastVerseNumber = "";
+  
+  while ((match = verseRegex.exec(content)) !== null) {
+    // If we already found a verse number before, save the text between the last match and this one
+    if (lastVerseNumber) {
+      // Extract text up to the next heading or end, and remove any "---" dividers
+      let verseText = content.slice(lastIndex, match.index!).trim();
+      verseText = verseText.replace(/---\s*$/, '').trim(); // Remove trailing dividers
+      verses[lastVerseNumber] = verseText;
+    }
+    
+    lastVerseNumber = match[1]!;
+    lastIndex = match.index! + match[0].length;
+  }
+  
+  // Don't forget the last verse
+  if (lastVerseNumber) {
+    let verseText = content.slice(lastIndex).trim();
+    verseText = verseText.replace(/---\s*$/, '').trim(); // Remove trailing dividers
+    verses[lastVerseNumber] = verseText;
+  }
+  
+  return verses;
+};
 
 export default function TaoTeChingOracle() {
   const [isConsulting, setIsConsulting] = useState(false);
   const [selectedVerse, setSelectedVerse] = useState<{number: string; text: string} | null>(null);
-  const [showReflection, setShowReflection] = useState(false);
-  const [reflection, setReflection] = useState("");
-  const [loading, setLoading] = useState(false);
   const [taoVerses, setTaoVerses] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Process the verses directly from the string
@@ -24,96 +54,33 @@ export default function TaoTeChingOracle() {
     setIsLoading(false);
   }, []);
 
-  // Function to process the verses from a string
-  const processVersesFromString = (content: string): {[key: string]: string} => {
-    const verses: {[key: string]: string} = {};
-    
-    // Updated regex to match the format "## N" or "## N - Title"
-    const verseRegex = /##\s*(\d+)(?:\s*-\s*[^\n]*)?/g;
-    let match;
-    let lastIndex = 0;
-    let lastVerseNumber = "";
-    
-    while ((match = verseRegex.exec(content)) !== null) {
-      // If we already found a verse number before, save the text between the last match and this one
-      if (lastVerseNumber) {
-        // Extract text up to the next heading or end, and remove any "---" dividers
-        let verseText = content.substring(lastIndex, match.index).trim();
-        verseText = verseText.replace(/---\s*$/, '').trim(); // Remove trailing dividers
-        verses[lastVerseNumber] = verseText;
-      }
-      
-      lastVerseNumber = match[1];
-      lastIndex = match.index + match[0].length;
-    }
-    
-    // Don't forget the last verse
-    if (lastVerseNumber) {
-      let verseText = content.substring(lastIndex).trim();
-      verseText = verseText.replace(/---\s*$/, '').trim(); // Remove trailing dividers
-      verses[lastVerseNumber] = verseText;
-    }
-    
-    return verses;
-  };
-
   const consultOracle = () => {
     // Only allow consultation if verses are loaded
     if (Object.keys(taoVerses).length === 0) return;
     
     setIsConsulting(true);
     setSelectedVerse(null);
-    setShowReflection(false);
     
     // Simulate the oracle consultation with a delay
     setTimeout(() => {
       const verseNumbers = Object.keys(taoVerses);
-      const randomVerseNumber = verseNumbers[Math.floor(Math.random() * verseNumbers.length)];
-      setSelectedVerse({
-        number: randomVerseNumber,
-        text: taoVerses[randomVerseNumber]
-      });
+      const randomIndex = Math.floor(Math.random() * verseNumbers.length);
+      const randomVerseNumber = verseNumbers[randomIndex];
+      if (randomVerseNumber) {
+        const verseText = taoVerses[randomVerseNumber];
+        if (verseText) {
+          setSelectedVerse({
+            number: randomVerseNumber,
+            text: verseText
+          });
+        }
+      }
       setIsConsulting(false);
     }, 389);
   };
 
-  // Add the Tao Te Ching text as a constant
-
-  const generateReflection = async () => {
-    if (!selectedVerse) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch('/api/oracle/reflection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          verse: selectedVerse.text,
-          verseNumber: selectedVerse.number,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate reflection');
-      }
-      
-      const data = await response.json();
-      setReflection(data.reflection);
-      setShowReflection(true);
-    } catch (error) {
-      console.error('Error generating reflection:', error);
-      setReflection("Дао мълчи в този момент. Моля, опитайте отново по-късно.");
-      setShowReflection(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const resetOracle = () => {
     setSelectedVerse(null);
-    setShowReflection(false);
   };
 
   return (
@@ -146,18 +113,6 @@ export default function TaoTeChingOracle() {
           <div className={styles.loadingContainer}>
             <div className={styles.consultingSpinner}></div>
             <p>Зареждане на стиховете...</p>
-          </div>
-        ) : error ? (
-          <div className={styles.errorContainer}>
-            <p className={styles.errorText}>{error}</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.reload()}
-              className={styles.consultButton}
-            >
-              Опитай отново
-            </motion.button>
           </div>
         ) : (
           <AnimatePresence mode="wait">

@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { Client } from '@notionhq/client';
 
 // Initialize Notion client
@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                            'heading_2' in block ? 'heading_2' : 'heading_3';
         
         if (headingBlock[headingType].rich_text.length > 0) {
-          const headingLevel = parseInt(headingType.slice(-1));
+          const headingLevel = Number.parseInt(headingType.slice(-1), 10);
           const headingMarker = '#'.repeat(headingLevel);
           const text = headingBlock[headingType].rich_text
             .map((textObj: any) => textObj.plain_text)
@@ -48,8 +48,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     
     return res.status(200).json({ content });
-  } catch (error) {
-    console.error('Error fetching from Notion:', error);
+  } catch (err) {
+    console.error('Error fetching from Notion:', err);
     return res.status(500).json({ error: 'Failed to fetch from Notion' });
   }
 }

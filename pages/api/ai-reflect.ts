@@ -5,9 +5,14 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface RequestBody {
+  verse: string;
+  verseNumber: string | number;
+}
+
 export async function POST(request: Request) {
   try {
-    const { verse, verseNumber } = await request.json();
+    const { verse, verseNumber } = await request.json() as RequestBody;
     
     if (!verse) {
       return NextResponse.json(
@@ -38,8 +43,8 @@ export async function POST(request: Request) {
       "The way that can be spoken of is not the constant way. Reflect on the silence between these words.";
     
     return NextResponse.json({ reflection });
-  } catch (error) {
-    console.error('Error generating reflection:', error);
+  } catch (err) {
+    console.error('Error generating reflection:', err);
     return NextResponse.json(
       { error: 'Failed to generate reflection' },
       { status: 500 }

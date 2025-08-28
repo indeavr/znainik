@@ -1,15 +1,19 @@
-// Core React and Next.js imports
+import 'katex/dist/katex.min.css' // used for rendering equations (optional)
+import 'prismjs/themes/prism-coy.css' // used for code syntax highlighting (optional)
+// import 'prismjs/themes/prism-okaidia.css' // this might be better for dark mode
+import 'react-notion-x/src/styles.css' // core styles shared by all of react-notion-x (required)
+import 'styles/global.css' // global styles shared across the entire site
+import 'styles/notion.css' // global style overrides for notion
+import 'styles/prism-theme.css' // global style overrides for prism theme (optional)
+
 import type { AppProps } from 'next/app'
+import { IconContext } from '@react-icons/all-files'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import * as Fathom from 'fathom-client'
 import { useRouter } from 'next/router'
 import { posthog } from 'posthog-js'
 import * as React from 'react'
 
-// Third-party libraries
-import * as Fathom from 'fathom-client'
-import { IconContext } from '@react-icons/all-files'
-import { SpeedInsights } from '@vercel/speed-insights/next'
-
-// Project imports
 import { bootstrap } from '@/lib/bootstrap-client'
 import {
   fathomConfig,
@@ -19,17 +23,9 @@ import {
   posthogId
 } from '@/lib/config'
 
-// Styles
-import 'katex/dist/katex.min.css' // used for rendering equations (optional)
-import 'prismjs/themes/prism-coy.css' // used for code syntax highlighting (optional)
-import 'react-notion-x/src/styles.css' // core styles shared by all of react-notion-x (required)
-import 'styles/global.css' // global styles shared across the entire site
-// import 'prismjs/themes/prism-okaidia.css' // this might be better for dark mode
-import 'styles/notion.css' // global style overrides for notion
-import 'styles/prism-theme.css' // global style overrides for prism theme (optional)
 
 // Create a client-side only component wrapper
-const ClientOnly = ({ children }) => {
+function ClientOnly({ children }: { children: React.ReactNode }) {
   const [hasMounted, setHasMounted] = React.useState(false)
   
   React.useEffect(() => {
