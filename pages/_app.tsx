@@ -1,12 +1,12 @@
 // Core React and Next.js imports
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
+import { posthog } from 'posthog-js'
 import * as React from 'react'
 
 // Third-party libraries
 import * as Fathom from 'fathom-client'
 import { IconContext } from '@react-icons/all-files'
-import posthog from 'posthog-js'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
 // Project imports
