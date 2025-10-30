@@ -21,6 +21,9 @@ export default class MyDocument extends Document {
           
           {/* Add preload for critical resources */}
           <link rel="preload" href="/favicon.png" as="image" />
+          
+          {/* Hotjar Tracking Code */}
+          <script src="https://t.contentsquare.net/uxa/9f0e11a01d357.js" />
         </Head>
 
         <body>
