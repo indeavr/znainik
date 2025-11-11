@@ -5,12 +5,30 @@ export default class MyDocument extends Document {
     return (
       <Html lang='en'>
         <Head>
-          <link rel='shortcut icon' href='/favicon.ico' />
+          <link rel='shortcut icon' href='/genfavicon-256.png' />
           <link
             rel='icon'
             type='image/png'
             sizes='32x32'
-            href='favicon.png'
+            href='/genfavicon-32.png'
+          />
+          <link
+            rel='icon'
+            type='image/png'
+            sizes='16x16'
+            href='/genfavicon-16.png'
+          />
+          <link
+            rel='icon'
+            type='image/png'
+            sizes='128x128'
+            href='/genfavicon-128.png'
+          />
+          <link
+            rel='icon'
+            type='image/png'
+            sizes='180x180'
+            href='/genfavicon-180.png'
           />
 
           <link rel='manifest' href='/manifest.json' />
@@ -20,7 +38,14 @@ export default class MyDocument extends Document {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           
           {/* Add preload for critical resources */}
-          <link rel="preload" href="/favicon.png" as="image" />
+          <link rel="preload" href="/genfavicon-256.png" as="image" />
+          
+          {/* Apple Touch Icons for iOS */}
+          <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png" />
+          <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png" />
+          <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
           
           {/* Hotjar Tracking Code */}
           <script src="https://t.contentsquare.net/uxa/9f0e11a01d357.js" />
