@@ -10,9 +10,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 export default withBundleAnalyzer({
   staticPageGenerationTimeout: 300,
-  // Use a fresh local dist directory to avoid permission issues from
-  // previously root-owned build artifacts.
-  distDir: '.next-dev-writable-1',
+  // Use default `.next` dist directory to be compatible with Vercel builds.
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.notion.so' },
