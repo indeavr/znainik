@@ -25,10 +25,13 @@ export const getStaticProps: GetStaticProps<PageProps, Params> = async (
 }
 
 export async function getStaticPaths() {
+  // Use blocking fallback so the first request returns fully rendered HTML
+  // with PageHead meta tags (critical for crawlers and previews).
+  // In dev and prod, this ensures SSR on initial access.
   if (isDev) {
     return {
       paths: [],
-      fallback: true
+      fallback: 'blocking'
     }
   }
 
@@ -41,7 +44,7 @@ export async function getStaticPaths() {
       }
     })),
     // paths: [],
-    fallback: true
+    fallback: 'blocking'
   }
 
   console.log(staticPaths.paths)
