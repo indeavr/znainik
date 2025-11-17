@@ -102,7 +102,8 @@ export function PageHead({
         <>
           <link rel='canonical' href={url} />
           <meta property='og:url' content={url} />
-          <meta property='twitter:url' content={url} />
+          {/* Twitter tags use `name` rather than `property` */}
+          <meta name='twitter:url' content={url} />
         </>
       )}
 
@@ -115,6 +116,8 @@ export function PageHead({
 
       <meta property='og:title' content={title} />
       <meta name='twitter:title' content={title} />
+      {/* Provide alt text for social image previews where supported */}
+      {socialImageUrl && <meta property='og:image:alt' content={title} />}
       <title>{title}</title>
 
       {/* Better SEO for the blog posts */}
