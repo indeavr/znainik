@@ -276,10 +276,10 @@ export function NotionPage({
     ? undefined
     : getCanonicalPageUrl(site, recordMap)(pageId)
 
-  const socialImage = mapImageUrl(
-    getPageProperty<string>('Social Image', block, recordMap) ||
-      (block as PageBlock).format?.page_cover ||
-      config.defaultPageCover,
+  // Use the Notion page cover image for previews. Ignore custom
+  // "Social Image" property to ensure consistency with the article cover.
+  const coverImage = mapImageUrl(
+    (block as PageBlock).format?.page_cover || config.defaultPageCover,
     block
   )
 
@@ -294,7 +294,7 @@ export function NotionPage({
         site={site}
         title={title}
         description={socialDescription}
-        image={socialImage}
+        image={coverImage}
         url={canonicalPageUrl}
         isBlogPost={isBlogPost}
       />

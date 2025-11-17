@@ -31,7 +31,9 @@ export function PageHead({
   title = title ?? site?.name
   description = description ?? site?.description
 
-  const socialImageUrl = getSocialImageUrl(pageId) || image
+  // Prefer the provided page cover image from Notion. Only fall back
+  // to the generated social image if the cover is missing.
+  const socialImageUrl = image || getSocialImageUrl(pageId)
 
   return (
     <Head>
