@@ -59,7 +59,10 @@ export function PageHead({
       />
 
       <meta name='robots' content='index,follow' />
-      <meta property='og:type' content='website' />
+      {/* Set the Open Graph type based on page context for better previews */}
+      <meta property='og:type' content={isBlogPost ? 'article' : 'website'} />
+      {/* Hint the page locale to scrapers for accurate title rendering */}
+      <meta property='og:locale' content='bg_BG' />
 
       {site && (
         <>
