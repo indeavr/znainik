@@ -24,21 +24,6 @@ import {
 } from '@/lib/config'
 
 
-// Create a client-side only component wrapper
-function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [hasMounted, setHasMounted] = React.useState(false)
-  
-  React.useEffect(() => {
-    setHasMounted(true)
-  }, [])
-  
-  if (!hasMounted) {
-    return null
-  }
-  
-  return <>{children}</>
-}
-
 // Only run bootstrap on client side
 if (!isServer) {
   bootstrap()
@@ -76,10 +61,8 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
-      <ClientOnly>
-        <Component {...pageProps} />
-        <SpeedInsights />
-      </ClientOnly>
+      <Component {...pageProps} />
+      <SpeedInsights />
     </IconContext.Provider>
   )
 }

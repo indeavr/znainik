@@ -33,7 +33,12 @@ export function PageHead({
 
   // Prefer the provided page cover image from Notion. Only fall back
   // to the generated social image if the cover is missing.
-  const socialImageUrl = image || getSocialImageUrl(pageId)
+  let socialImageUrl = image || getSocialImageUrl(pageId)
+  
+  // Ensure the image URL is absolute for social media crawlers
+  if (socialImageUrl && !socialImageUrl.startsWith('http')) {
+    socialImageUrl = `${config.host}${socialImageUrl.startsWith('/') ? '' : '/'}${socialImageUrl}`
+  }
 
   return (
     <Head>
@@ -90,9 +95,15 @@ export function PageHead({
           <meta name='twitter:card' content='summary_large_image' />
           <meta name='twitter:image' content={socialImageUrl} />
           <meta property='og:image' content={socialImageUrl} />
+          {/* Include secure_url for HTTPS images to improve compatibility */}
+          {socialImageUrl.startsWith('https://') && (
+            <meta property='og:image:secure_url' content={socialImageUrl} />
+          )}
           {/* Explicit image dimensions improve preview reliability across scrapers */}
           <meta property='og:image:width' content='1200' />
           <meta property='og:image:height' content='630' />
+          {/* Add image type for better compatibility */}
+          <meta property='og:image:type' content='image/jpeg' />
         </>
       ) : (
         <meta name='twitter:card' content='summary' />

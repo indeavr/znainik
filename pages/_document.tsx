@@ -3,7 +3,7 @@ import Document, { Head, Html, Main, NextScript } from 'next/document'
 export default class MyDocument extends Document {
   override render() {
     return (
-      <Html lang='en'>
+      <Html lang='bg'>
         <Head>
           <link rel='shortcut icon' href='/genfavicon-256.png' />
           <link
