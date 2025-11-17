@@ -9,7 +9,7 @@ export default siteConfig({
 
   // basic site info (required)
   name: 'Azaira Znainik',
-  domain: 'azaira.bg',
+  domain: 'znainik.azaira.bg',
   author: 'MarDaRaTin',
 
   // open graph metadata (optional)

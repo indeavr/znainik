@@ -4,6 +4,13 @@ import type * as types from '@/lib/types'
 import * as config from '@/lib/config'
 import { getSocialImageUrl } from '@/lib/get-social-image-url'
 
+/**
+ * PageHead renders SEO-critical head tags for every page.
+ *
+ * It sets Open Graph and Twitter metadata using server-side values to ensure
+ * messaging apps (e.g., Viber/Telegram) can render rich link previews without
+ * relying on client-side hydration. It also handles canonical URLs and RSS.
+ */
 export function PageHead({
   site,
   title,
@@ -78,6 +85,9 @@ export function PageHead({
           <meta name='twitter:card' content='summary_large_image' />
           <meta name='twitter:image' content={socialImageUrl} />
           <meta property='og:image' content={socialImageUrl} />
+          {/* Explicit image dimensions improve preview reliability across scrapers */}
+          <meta property='og:image:width' content='1200' />
+          <meta property='og:image:height' content='630' />
         </>
       ) : (
         <meta name='twitter:card' content='summary' />
