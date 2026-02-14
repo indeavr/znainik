@@ -11,19 +11,21 @@ export function getCanonicalPageId(
   recordMap: ExtendedRecordMap,
   { uuid = true }: { uuid?: boolean } = {}
 ): string | undefined {
-  const cleanPageId = parsePageId(pageId, { uuid: false })
+  if (pageId == null || pageId === '' || !recordMap) {
+    return undefined
+  }
+  const cleanPageId = parsePageId(String(pageId), { uuid: false })
   if (!cleanPageId) {
-    return
+    return undefined
   }
 
   const override = inversePageUrlOverrides[cleanPageId]
   if (override) {
     return override
-  } else {
-    return (
-      getCanonicalPageIdImpl(pageId, recordMap, {
-        uuid
-      }) ?? undefined
-    )
   }
+  return (
+    getCanonicalPageIdImpl(String(pageId), recordMap, {
+      uuid
+    }) ?? undefined
+  )
 }

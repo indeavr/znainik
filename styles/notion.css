@@ -155,10 +155,9 @@
   }
 }
 
+/* Search icon now visible on mobile for better UX */
 @media only screen and (max-width: 600px) {
-  .notion-search-button {
-    display: none !important;
-  }
+  /* Removed: display: none on .notion-search-button to keep search accessible on mobile */
 }
 
 .notion .notion-page-icon-cover {
