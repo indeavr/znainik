@@ -1,4 +1,4 @@
-import { AnimatePresence,motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { type GetStaticProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'

@@ -5,8 +5,8 @@ import type * as types from './types'
 import * as config from './config'
 import { includeNotionIdInUrls } from './config'
 import { getCanonicalPageId } from './get-canonical-page-id'
-import { safeUuidToId } from './safe-notion-id'
 import { notion } from './notion-api'
+import { safeUuidToId } from './safe-notion-id'
 
 const uuid = !!includeNotionIdInUrls
 

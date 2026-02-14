@@ -1,0 +1,12 @@
+diff --git a/build/index.js b/build/index.js
+--- a/build/index.js
++++ b/build/index.js
+@@ -530,7 +530,7 @@
+ };
+ 
+ // src/uuid-to-id.ts
+-var uuidToId = (uuid) => uuid.replaceAll("-", "");
++var uuidToId = (uuid) => (uuid ?? "").replaceAll("-", "");
+ 
+ // src/get-canonical-page-id.ts
+ var getCanonicalPageId = (pageId, recordMap, { uuid = true } = {}) => {

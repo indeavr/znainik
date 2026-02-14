@@ -54,8 +54,8 @@ export default siteConfig({
   navigationStyle: 'custom',
   navigationLinks: [
     {
-      title: 'Пулс',
-      pageId: '1c5d629f9cd2802bbabcc4216114c5bc'
+      title: 'Азайра',
+      url: 'https://azaira.bg'
     },
     // {
     //   title: 'Contact',

@@ -71,6 +71,8 @@ export function NotionPageHeader({
                     href={link.url}
                     key={index}
                     className={cs(styles.navLink, 'breadcrumb', 'button')}
+                    target='_blank'
+                    rel='noopener noreferrer'
                   >
                     {link.title}
                   </components.Link>
