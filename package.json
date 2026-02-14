@@ -13,7 +13,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postinstall": "patch -p1 -d node_modules/notion-utils < patches/notion-utils+7.7.1.patch 2>/dev/null || true",
     "start": "next start",
     "deploy": "vercel deploy",
     "deps:upgrade": "[ -z $GITHUB_ACTIONS ] && pnpm up -L notion-client notion-types notion-utils react-notion-x || echo 'Skipping deps:update on CI'",
