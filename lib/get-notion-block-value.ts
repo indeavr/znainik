@@ -1,4 +1,4 @@
-import type { Block, User } from 'notion-types'
+import type { Block, Collection, CollectionView, User } from 'notion-types'
 
 function unwrapNotionMapNode<T extends { id: string }>(
   node: { value?: unknown } | T | undefined | null
@@ -31,4 +31,18 @@ export function getNotionUserValue(
   node: { value?: unknown } | User | undefined | null
 ): User | undefined {
   return unwrapNotionMapNode<User>(node)
+}
+
+/** Unwraps `collection` map entries. */
+export function getNotionCollectionValue(
+  node: { value?: unknown } | Collection | undefined | null
+): Collection | undefined {
+  return unwrapNotionMapNode<Collection>(node)
+}
+
+/** Unwraps `collection_view` map entries. */
+export function getNotionCollectionViewValue(
+  node: { value?: unknown } | CollectionView | undefined | null
+): CollectionView | undefined {
+  return unwrapNotionMapNode<CollectionView>(node)
 }

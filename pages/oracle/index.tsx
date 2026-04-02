@@ -6,7 +6,11 @@ import { useState } from 'react'
 
 import { NotionPage } from '@/components/NotionPage'
 import { domain } from '@/lib/config'
-import { getNotionBlockValue } from '@/lib/get-notion-block-value'
+import {
+  getNotionBlockValue,
+  getNotionCollectionValue,
+  getNotionCollectionViewValue
+} from '@/lib/get-notion-block-value'
 import { resolveNotionPage } from '@/lib/resolve-notion-page'
 import { type PageProps } from '@/lib/types'
 
@@ -45,15 +49,25 @@ export default function OraclePage(props: PageProps) {
     const collections = Object.values(props.recordMap.collection)
     
     for (const collection of collections) {
-      if (collection?.value) {
-        const collectionId = collection.value.id
-        
-        // Get collection view data
-        const collectionView = Object.values(props.recordMap?.collection_view || {})
-          .find((view: any) => view?.value?.collection_id === collectionId)
-        
-        if (collectionView?.value && (collectionView.value as any).page_sort) {
-          const pageSort = (collectionView.value as any).page_sort
+      const coll = getNotionCollectionValue(collection)
+      if (!coll?.id) continue
+
+      const collectionId = coll.id
+
+      const collectionView = Object.values(
+        props.recordMap?.collection_view || {}
+      ).find((view) => {
+        const v = getNotionCollectionViewValue(view)
+        if (!v) return false
+        const withCollId = v as { collection_id?: string }
+        return (
+          withCollId.collection_id === collectionId || v.parent_id === collectionId
+        )
+      })
+
+      const viewUnwrapped = getNotionCollectionViewValue(collectionView)
+      if (viewUnwrapped && (viewUnwrapped as { page_sort?: string[] }).page_sort) {
+        const pageSort = (viewUnwrapped as { page_sort: string[] }).page_sort
           for (const [index, pageId] of pageSort.entries()) {
             const block = getNotionBlockValue(props.recordMap?.block?.[pageId])
             if (block && block.type === 'page') {
@@ -74,7 +88,6 @@ export default function OraclePage(props: PageProps) {
             }
           }
         }
-      }
     }
     
     // If no cards found, generate placeholder cards
