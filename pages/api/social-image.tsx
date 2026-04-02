@@ -12,6 +12,7 @@ import {
 
 import * as libConfig from '@/lib/config'
 import interSemiBoldFont from '@/lib/fonts/inter-semibold'
+import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import { mapImageUrl } from '@/lib/map-image-url'
 import { notion } from '@/lib/notion-api'
 import { normalizeNotionApiRecordMap } from '@/lib/notion-record-map'
@@ -180,7 +181,7 @@ export async function getNotionPageInfo({
   normalizeNotionApiRecordMap(recordMap)
 
   const keys = Object.keys(recordMap?.block || {})
-  const block = recordMap?.block?.[keys[0]!]?.value
+  const block = getNotionBlockValue(recordMap?.block?.[keys[0]!])
 
   if (!block) {
     throw new Error('Invalid recordMap for page')

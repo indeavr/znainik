@@ -3,6 +3,8 @@ import type { ExtendedRecordMap } from 'notion-types'
 import { getBlockCollectionId, getPageContentBlockIds, parsePageId } from 'notion-utils'
 import pMap from 'p-map'
 
+import { getNotionBlockValue } from './get-notion-block-value'
+
 /**
  * Notion sometimes returns each record as `{ value: { value: actualRecord, role? } }`.
  * notion-utils 7.10+ adds `getBlockValue` and fixes traversal (issue #682); we still
@@ -60,7 +62,7 @@ export async function hydrateNotionCollectionQueries(
   const contentBlockIds = getPageContentBlockIds(recordMap, rootId)
 
   const allCollectionInstances = contentBlockIds.flatMap((blockId) => {
-    const block = recordMap.block[blockId]?.value
+    const block = getNotionBlockValue(recordMap.block[blockId])
     const collectionId =
       block &&
       (block.type === 'collection_view' || block.type === 'collection_view_page') &&

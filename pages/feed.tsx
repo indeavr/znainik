@@ -9,6 +9,7 @@ import {
 import RSS from 'rss'
 
 import * as config from '@/lib/config'
+import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import { getSiteMap } from '@/lib/get-site-map'
 import { getSocialImageUrl } from '@/lib/get-social-image-url'
 import { getCanonicalPageUrl } from '@/lib/map-page-url'
@@ -40,7 +41,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     if (!recordMap) continue
 
     const keys = Object.keys(recordMap?.block || {})
-    const block = recordMap?.block?.[keys[0]!]?.value
+    const block = getNotionBlockValue(recordMap?.block?.[keys[0]!])
     if (!block) continue
 
     const parentPage = getBlockParentPage(block, recordMap)

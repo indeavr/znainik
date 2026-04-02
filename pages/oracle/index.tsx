@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 import { NotionPage } from '@/components/NotionPage'
 import { domain } from '@/lib/config'
+import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import { resolveNotionPage } from '@/lib/resolve-notion-page'
 import { type PageProps } from '@/lib/types'
 
@@ -54,7 +55,7 @@ export default function OraclePage(props: PageProps) {
         if (collectionView?.value && (collectionView.value as any).page_sort) {
           const pageSort = (collectionView.value as any).page_sort
           for (const [index, pageId] of pageSort.entries()) {
-            const block = props.recordMap?.block?.[pageId]?.value
+            const block = getNotionBlockValue(props.recordMap?.block?.[pageId])
             if (block && block.type === 'page') {
               const properties = block.properties as any || {}
               
