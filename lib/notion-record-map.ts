@@ -55,7 +55,9 @@ export async function hydrateNotionCollectionQueries(
   options?: { collectionReducerLimit?: number; concurrency?: number }
 ): Promise<void> {
   const collectionReducerLimit = options?.collectionReducerLimit ?? 999
-  const concurrency = options?.concurrency ?? 3
+  const concurrency =
+    options?.concurrency ??
+    Number(process.env.NOTION_COLLECTION_CONCURRENCY ?? '2')
 
   recordMap.collection_query = recordMap.collection_query ?? {}
   const rootId = parsePageId(pageId) ?? pageId

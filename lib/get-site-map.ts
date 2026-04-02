@@ -8,9 +8,20 @@ import { getCanonicalPageId } from './get-canonical-page-id'
 import { getNotionBlockValue } from './get-notion-block-value'
 import { notion } from './notion-api'
 import { normalizeNotionApiRecordMap } from './notion-record-map'
+import { withNotionRetry } from './notion-retry'
 import { safeUuidToId } from './safe-notion-id'
 
 const uuid = !!includeNotionIdInUrls
+
+/** Parallel page fetches while crawling the workspace (lower = fewer 429s from Notion). */
+const sitemapQueueConcurrency = Number(
+  process.env.NOTION_SITEMAP_QUEUE_CONCURRENCY ?? '2'
+)
+
+/** Parallel sub-requests inside each notion.getPage (e.g. collection queries). */
+const sitemapGetPageConcurrency = Number(
+  process.env.NOTION_SITEMAP_GETPAGE_CONCURRENCY ?? '1'
+)
 
 export async function getSiteMap(): Promise<types.SiteMap> {
   const partialSiteMap = await getAllPages(
@@ -28,16 +39,20 @@ const getAllPages = pMemoize(getAllPagesImpl, {
   cacheKey: (...args) => JSON.stringify(args)
 })
 
-const getPage = async (pageId: string, opts?: any) => {
+const getPage = async (pageId: string, opts?: Record<string, unknown>) => {
   console.log('\nnotion getPage', safeUuidToId(pageId))
-  const recordMap = await notion.getPage(pageId, {
-    kyOptions: {
-      timeout: 30_000
-    },
-    ...opts
+  return withNotionRetry(async () => {
+    const recordMap = await notion.getPage(pageId, {
+      ...opts,
+      ofetchOptions: {
+        timeout: 60_000,
+        ...(opts?.ofetchOptions as object | undefined)
+      },
+      concurrency: sitemapGetPageConcurrency
+    })
+    normalizeNotionApiRecordMap(recordMap)
+    return recordMap
   })
-  normalizeNotionApiRecordMap(recordMap)
-  return recordMap
 }
 
 async function getAllPagesImpl(
@@ -54,7 +69,8 @@ async function getAllPagesImpl(
     rootNotionSpaceId,
     getPage,
     {
-      maxDepth
+      maxDepth,
+      concurrency: sitemapQueueConcurrency
     }
   )
 

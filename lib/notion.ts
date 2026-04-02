@@ -18,6 +18,7 @@ import {
   hydrateNotionCollectionQueries,
   normalizeNotionApiRecordMap
 } from './notion-record-map'
+import { withNotionRetry } from './notion-retry'
 import { getPreviewImageMap } from './preview-images'
 
 const getNavigationLinkPages = pMemoize(
@@ -30,14 +31,17 @@ const getNavigationLinkPages = pMemoize(
       return pMap(
         navigationLinkPageIds,
         async (navigationLinkPageId) =>
-          notion.getPage(navigationLinkPageId, {
-            chunkLimit: 1,
-            fetchMissingBlocks: false,
-            fetchCollections: false,
-            signFileUrls: false
-          }),
+          withNotionRetry(() =>
+            notion.getPage(navigationLinkPageId, {
+              chunkLimit: 1,
+              fetchMissingBlocks: false,
+              fetchCollections: false,
+              signFileUrls: false,
+              concurrency: 1
+            })
+          ),
         {
-          concurrency: 4
+          concurrency: 2
         }
       )
     }
@@ -46,10 +50,18 @@ const getNavigationLinkPages = pMemoize(
   }
 )
 
+const notionPageConcurrency = Number(process.env.NOTION_GETPAGE_CONCURRENCY ?? '2')
+
 export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
-  let recordMap = await notion.getPage(pageId)
+  let recordMap = await withNotionRetry(() =>
+    notion.getPage(pageId, {
+      concurrency: notionPageConcurrency
+    })
+  )
   normalizeNotionApiRecordMap(recordMap)
-  await hydrateNotionCollectionQueries(notion, recordMap, pageId)
+  await hydrateNotionCollectionQueries(notion, recordMap, pageId, {
+    concurrency: notionPageConcurrency
+  })
 
   if (navigationStyle !== 'default') {
     // ensure that any pages linked to in the custom navigation header have
