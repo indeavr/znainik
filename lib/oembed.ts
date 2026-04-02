@@ -1,6 +1,7 @@
 import { getPageTitle, parsePageId } from 'notion-utils'
 
 import * as config from './config'
+import { getNotionUserValue } from './get-notion-block-value'
 import { getPage } from './notion'
 
 export const oembed = async ({
@@ -26,12 +27,17 @@ export const oembed = async ({
   const pageTitle = getPageTitle(page)
   if (pageTitle) title = pageTitle
 
-  const user = page.notion_user[Object.keys(page.notion_user)[0]!]!.value
-  const name = [user.given_name, user.family_name]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-  if (name) authorName = name
+  const userKeys = Object.keys(page.notion_user || {})
+  const user = userKeys.length
+    ? getNotionUserValue(page.notion_user[userKeys[0]!])
+    : undefined
+  if (user) {
+    const name = [user.given_name, user.family_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    if (name) authorName = name
+  }
 
   const params: any = { lite: 'true' }
   if (dark) {
