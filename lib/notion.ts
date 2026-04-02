@@ -21,6 +21,26 @@ import {
 import { withNotionRetry } from './notion-retry'
 import { getPreviewImageMap } from './preview-images'
 
+/** Per-collection merge so two pages sharing a database do not clobber view queries. */
+function deepMergeCollectionQuery(
+  a: ExtendedRecordMap['collection_query'],
+  b: ExtendedRecordMap['collection_query']
+): ExtendedRecordMap['collection_query'] {
+  const out: Record<string, Record<string, unknown>> = a
+    ? { ...(a as Record<string, Record<string, unknown>>) }
+    : {}
+  if (!b) {
+    return out as ExtendedRecordMap['collection_query']
+  }
+  for (const [collectionId, views] of Object.entries(
+    b as Record<string, Record<string, unknown>>
+  )) {
+    const prev = out[collectionId]
+    out[collectionId] = prev ? { ...prev, ...views } : { ...views }
+  }
+  return out as ExtendedRecordMap['collection_query']
+}
+
 const getNavigationLinkPages = pMemoize(
   async (): Promise<ExtendedRecordMap[]> => {
     const navigationLinkPageIds = (navigationLinks || [])
@@ -70,12 +90,20 @@ export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
     const navigationLinkRecordMaps = await getNavigationLinkPages()
 
     if (navigationLinkRecordMaps?.length) {
-      recordMap = navigationLinkRecordMaps.reduce(
-        (map, navigationLinkRecordMap) =>
-          mergeRecordMaps(map, navigationLinkRecordMap),
-        recordMap
-      )
+      recordMap = navigationLinkRecordMaps.reduce((map, navigationLinkRecordMap) => {
+        const merged = mergeRecordMaps(map, navigationLinkRecordMap)
+        return {
+          ...merged,
+          collection_query: deepMergeCollectionQuery(
+            map.collection_query,
+            navigationLinkRecordMap.collection_query
+          )
+        }
+      }, recordMap)
       normalizeNotionApiRecordMap(recordMap)
+      await hydrateNotionCollectionQueries(notion, recordMap, pageId, {
+        concurrency: notionPageConcurrency
+      })
     }
   }
 

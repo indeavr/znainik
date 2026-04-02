@@ -3,7 +3,11 @@ import type { ExtendedRecordMap } from 'notion-types'
 import { getBlockCollectionId, getPageContentBlockIds, parsePageId } from 'notion-utils'
 import pMap from 'p-map'
 
-import { getNotionBlockValue } from './get-notion-block-value'
+import {
+  getNotionBlockValue,
+  getNotionCollectionViewValue
+} from './get-notion-block-value'
+import { withNotionRetry } from './notion-retry'
 
 /**
  * Notion sometimes returns each record as `{ value: { value: actualRecord, role? } }`.
@@ -87,21 +91,30 @@ export async function hydrateNotionCollectionQueries(
     async ({ collectionId, collectionViewId, spaceId }) => {
       const existing =
         recordMap.collection_query[collectionId]?.[collectionViewId]
-      if (existing != null) {
+      // notion-client may leave `{}` or skip keys on errors; only skip when we
+      // already have a non-empty query payload (avoids stale `{}` skipping refetch).
+      if (
+        existing != null &&
+        typeof existing === 'object' &&
+        Object.keys(existing as object).length > 0
+      ) {
         return
       }
-      const collectionView =
-        recordMap.collection_view[collectionViewId]?.value
+      const collectionView = getNotionCollectionViewValue(
+        recordMap.collection_view[collectionViewId]
+      )
       try {
-        const collectionData = await client.getCollectionData(
-          collectionId,
-          collectionViewId,
-          collectionView,
-          {
-            limit: collectionReducerLimit,
-            spaceId,
-            ofetchOptions: { timeout: 60_000 }
-          }
+        const collectionData = await withNotionRetry(() =>
+          client.getCollectionData(
+            collectionId,
+            collectionViewId,
+            collectionView,
+            {
+              limit: collectionReducerLimit,
+              spaceId,
+              ofetchOptions: { timeout: 60_000 }
+            }
+          )
         )
         recordMap.block = {
           ...recordMap.block,
