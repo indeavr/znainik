@@ -86,22 +86,36 @@ export default async function revalidate(
     pathsToRevalidate.push(path)
   }
 
-  const results: { path: string; ok: boolean; error?: string }[] = []
-
-  for (const path of pathsToRevalidate) {
-    try {
+  // Run revalidations in parallel so "path=all" finishes within function timeout
+  const settled = await Promise.allSettled(
+    pathsToRevalidate.map(async (path) => {
       await res.revalidate(path)
-      results.push({ path, ok: true })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.error('revalidate path', path, message)
-      results.push({ path, ok: false, error: message })
-    }
-  }
+      return path
+    })
+  )
+
+  const results = pathsToRevalidate.map((path, i) => {
+    const s = settled[i]
+    if (!s) return { path, ok: false, error: 'No result' }
+    if (s.status === 'fulfilled') return { path, ok: true }
+    const message =
+      s.reason instanceof Error ? s.reason.message : String(s.reason)
+    console.error('revalidate path', path, message)
+    return { path, ok: false, error: message }
+  })
 
   const allOk = results.every((r) => r.ok)
   return res.status(allOk ? 200 : 207).json({
     revalidated: allOk,
     results
   })
+}
+
+/** Allow longer timeout for "path=all" (many paths). Vercel default is 10s; Pro allows up to 300. */
+export const config = {
+  maxDuration: 60,
+  api: {
+    responseLimit: false,
+    externalResolver: true
+  }
 }

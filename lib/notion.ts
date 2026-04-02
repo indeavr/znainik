@@ -14,6 +14,10 @@ import {
 } from './config'
 import { getTweetsMap } from './get-tweets'
 import { notion } from './notion-api'
+import {
+  hydrateNotionCollectionQueries,
+  normalizeNotionApiRecordMap
+} from './notion-record-map'
 import { getPreviewImageMap } from './preview-images'
 
 const getNavigationLinkPages = pMemoize(
@@ -44,6 +48,8 @@ const getNavigationLinkPages = pMemoize(
 
 export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
   let recordMap = await notion.getPage(pageId)
+  normalizeNotionApiRecordMap(recordMap)
+  await hydrateNotionCollectionQueries(notion, recordMap, pageId)
 
   if (navigationStyle !== 'default') {
     // ensure that any pages linked to in the custom navigation header have
@@ -57,6 +63,7 @@ export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
           mergeRecordMaps(map, navigationLinkRecordMap),
         recordMap
       )
+      normalizeNotionApiRecordMap(recordMap)
     }
   }
 

@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "pages/api/revalidate.ts": {
+      "maxDuration": 60
+    }
+  }
+}

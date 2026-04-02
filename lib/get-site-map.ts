@@ -6,6 +6,7 @@ import * as config from './config'
 import { includeNotionIdInUrls } from './config'
 import { getCanonicalPageId } from './get-canonical-page-id'
 import { notion } from './notion-api'
+import { normalizeNotionApiRecordMap } from './notion-record-map'
 import { safeUuidToId } from './safe-notion-id'
 
 const uuid = !!includeNotionIdInUrls
@@ -28,12 +29,14 @@ const getAllPages = pMemoize(getAllPagesImpl, {
 
 const getPage = async (pageId: string, opts?: any) => {
   console.log('\nnotion getPage', safeUuidToId(pageId))
-  return notion.getPage(pageId, {
+  const recordMap = await notion.getPage(pageId, {
     kyOptions: {
       timeout: 30_000
     },
     ...opts
   })
+  normalizeNotionApiRecordMap(recordMap)
+  return recordMap
 }
 
 async function getAllPagesImpl(

@@ -219,3 +219,8 @@
 .hidden {
   visibility: hidden;
 }
+
+/* Scroll-hide: header moves up when user scrolls down, reappears on scroll up */
+.headerScrollHidden {
+  transform: translateY(-100%);
+}

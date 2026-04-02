@@ -7,6 +7,7 @@ import { Breadcrumbs, Header, Search, useNotionContext } from 'react-notion-x'
 
 import { isSearchEnabled, navigationLinks, navigationStyle } from '@/lib/config'
 import { useDarkMode } from '@/lib/use-dark-mode'
+import { useHeaderHidden } from '@/lib/use-scroll-direction'
 
 import styles from './styles.module.css'
 
@@ -38,13 +39,16 @@ export function NotionPageHeader({
   block: types.CollectionViewPageBlock | types.PageBlock
 }) {
   const { components, mapPageUrl } = useNotionContext()
+  const headerHidden = useHeaderHidden()
 
   if (navigationStyle === 'default') {
     return <Header block={block} />
   }
 
   return (
-    <header className='notion-header'>
+    <header
+      className={cs('notion-header', headerHidden && styles.headerScrollHidden)}
+    >
       <div className='notion-nav-header'>
         <Breadcrumbs block={block} rootOnly={true} />
 

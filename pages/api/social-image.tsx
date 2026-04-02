@@ -14,6 +14,7 @@ import * as libConfig from '@/lib/config'
 import interSemiBoldFont from '@/lib/fonts/inter-semibold'
 import { mapImageUrl } from '@/lib/map-image-url'
 import { notion } from '@/lib/notion-api'
+import { normalizeNotionApiRecordMap } from '@/lib/notion-record-map'
 import { type NotionPageInfo, type PageError } from '@/lib/types'
 
 export const runtime = 'edge'
@@ -176,6 +177,7 @@ export async function getNotionPageInfo({
   | { type: 'error'; error: PageError }
 > {
   const recordMap = await notion.getPage(pageId)
+  normalizeNotionApiRecordMap(recordMap)
 
   const keys = Object.keys(recordMap?.block || {})
   const block = recordMap?.block?.[keys[0]!]?.value

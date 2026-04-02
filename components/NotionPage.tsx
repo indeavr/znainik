@@ -213,6 +213,12 @@ export function NotionPage({
   const isLiteMode = lite === 'true'
 
   const { isDarkMode } = useDarkMode()
+  // useDarkMode reads localStorage on the client; SSR always gets false. Defer until
+  // mount so the first client render matches the server and NotionRenderer avoids a
+  // light-mode / dark-mode class hydration mismatch.
+  const [darkModeMounted, setDarkModeMounted] = React.useState(false)
+  React.useEffect(() => setDarkModeMounted(true), [])
+  const darkModeForDom = darkModeMounted ? isDarkMode : false
 
   const siteMapPageUrl = React.useMemo(() => {
     const params: any = {}
@@ -300,14 +306,14 @@ export function NotionPage({
       />
 
       {isLiteMode && <BodyClassName className='notion-lite' />}
-      {isDarkMode && <BodyClassName className='dark-mode' />}
+      {darkModeForDom && <BodyClassName className='dark-mode' />}
 
       <NotionRenderer
         bodyClassName={cs(
           styles.notion,
           pageId === site.rootNotionPageId && 'index-page'
         )}
-        darkMode={isDarkMode}
+        darkMode={darkModeForDom}
         components={components}
         recordMap={recordMap}
         rootPageId={site.rootNotionPageId}
