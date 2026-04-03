@@ -7,6 +7,10 @@ import {
 } from 'notion-utils'
 import pMap from 'p-map'
 
+import {
+  getNotionBlockValue,
+  getNotionCollectionViewValue
+} from './get-notion-block-value'
 import { normalizeNotionApiRecordMap } from './notion-record-map'
 
 type GetPageOptions = NonNullable<Parameters<NotionAPI['getPage']>[1]>
@@ -72,7 +76,7 @@ export class ZnainikNotionAPI extends NotionAPI {
     const contentBlockIds = getPageContentBlockIds(recordMap)
     if (fetchCollections) {
       const allCollectionInstances = contentBlockIds.flatMap((blockId) => {
-        const block = recordMap.block[blockId]?.value
+        const block = getNotionBlockValue(recordMap.block[blockId])
         const collectionId =
           block &&
           (block.type === 'collection_view' ||
@@ -94,7 +98,9 @@ export class ZnainikNotionAPI extends NotionAPI {
         allCollectionInstances,
         async (collectionInstance) => {
           const { collectionId, collectionViewId, spaceId } = collectionInstance
-          const collectionView = recordMap.collection_view[collectionViewId]?.value
+          const collectionView = getNotionCollectionViewValue(
+            recordMap.collection_view[collectionViewId]
+          )
           try {
             const collectionData = await this.getCollectionData(
               collectionId,
