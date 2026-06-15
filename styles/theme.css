@@ -10,24 +10,30 @@
  */
 
 :root {
-  /* brand accents */
-  --brand: #6d28d9;
-  --brand-strong: #5b21b6;
-  --brand-2: #e5337e;
+  /* brand accents — indigo → electric blue → cyan */
+  --brand: #4f46e5;
+  --brand-strong: #4338ca;
+  --brand-2: #2563eb;
+  --brand-electric: #06b6d4;
   --brand-gold: #c0922f;
-  --brand-gradient: linear-gradient(95deg, #7c3aed 0%, #e5337e 100%);
-  --brand-glow: rgba(124, 58, 237, 0.18);
+  --brand-gradient: linear-gradient(
+    105deg,
+    #4f46e5 0%,
+    #2563eb 52%,
+    #06b6d4 100%
+  );
+  --brand-glow: rgba(79, 70, 229, 0.2);
 
   /* page + surfaces */
   --page-bg: #faf7f1;
   --page-bg-accent: radial-gradient(
       1200px 600px at 50% -10%,
-      rgba(124, 58, 237, 0.06),
+      rgba(79, 70, 229, 0.08),
       transparent 60%
     ),
     radial-gradient(
       900px 500px at 100% 0%,
-      rgba(229, 51, 126, 0.05),
+      rgba(6, 182, 212, 0.06),
       transparent 55%
     );
   --surface: #ffffff;
@@ -39,6 +45,14 @@
     0 10px 26px rgba(20, 18, 45, 0.07);
   --shadow-hover: 0 16px 40px rgba(20, 18, 45, 0.14);
 
+  /* layout — fluid gutters that scale smoothly on every screen size */
+  --page-max-width: 1180px;
+  --page-gutter: clamp(1.25rem, calc(0.625rem + 3.5vmin), 2.75rem);
+  --page-padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  --page-padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+  --section-gap-y: clamp(1.75rem, 4.5vw, 3.5rem);
+  --header-height: 64px;
+
   /* react-notion-x overrides (light) */
   --fg-color: #2a2730;
   --fg-color-3: rgba(42, 39, 48, 0.6);
@@ -49,22 +63,28 @@
 }
 
 .dark-mode {
-  --brand: #a78bfa;
-  --brand-strong: #8b5cf6;
-  --brand-2: #f472b6;
+  --brand: #818cf8;
+  --brand-strong: #a5b4fc;
+  --brand-2: #60a5fa;
+  --brand-electric: #22d3ee;
   --brand-gold: #e0b75a;
-  --brand-gradient: linear-gradient(95deg, #a78bfa 0%, #f472b6 100%);
-  --brand-glow: rgba(167, 139, 250, 0.22);
+  --brand-gradient: linear-gradient(
+    105deg,
+    #818cf8 0%,
+    #60a5fa 52%,
+    #22d3ee 100%
+  );
+  --brand-glow: rgba(129, 140, 248, 0.26);
 
   --page-bg: #14151b;
   --page-bg-accent: radial-gradient(
       1200px 600px at 50% -10%,
-      rgba(167, 139, 250, 0.1),
+      rgba(129, 140, 248, 0.13),
       transparent 60%
     ),
     radial-gradient(
       900px 500px at 100% 0%,
-      rgba(244, 114, 182, 0.07),
+      rgba(34, 211, 238, 0.08),
       transparent 55%
     );
   --surface: #1e2027;
@@ -131,8 +151,8 @@
 
 .scroll-top {
   position: fixed;
-  right: max(1.25rem, env(safe-area-inset-right));
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  right: var(--page-padding-right);
+  bottom: max(var(--page-gutter), env(safe-area-inset-bottom, 0px));
   width: 44px;
   height: 44px;
   display: inline-flex;

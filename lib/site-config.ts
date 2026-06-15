@@ -33,6 +33,16 @@ export interface SiteConfig {
 
   navigationStyle?: types.NavigationStyle
   navigationLinks?: Array<NavigationLink>
+
+  /**
+   * Notion page that embeds linked views of the Приказки / Епизоди databases.
+   * Share the page to the web, then paste its id here (or NOTION_STORIES_PAGE_ID).
+   */
+  storiesNotionPageId?: string | null
+  /** Episodes database id (optional; auto-detected from the hub when omitted). */
+  storiesEpisodesCollectionId?: string | null
+  /** Tales metadata database id (optional). */
+  storiesTalesCollectionId?: string | null
 }
 
 export interface NavigationLink {

@@ -1,39 +1,20 @@
 {
-  "name": "Azaira Znainik",
-  "short_name": "Znainik",
+  "name": "Azaira Знайник",
+  "short_name": "Знайник",
   "icons": [
     {
-      "src": "/genfavicon-16.png",
+      "src": "/logo/logo-circle.png",
       "type": "image/png",
-      "sizes": "16x16"
+      "sizes": "500x500"
     },
     {
-      "src": "/genfavicon-32.png",
+      "src": "/logo/logo-square-big.png",
       "type": "image/png",
-      "sizes": "32x32"
-    },
-    {
-      "src": "/genfavicon-128.png",
-      "type": "image/png",
-      "sizes": "128x128"
-    },
-    {
-      "src": "/genfavicon-180.png",
-      "type": "image/png",
-      "sizes": "180x180"
-    },
-    {
-      "src": "/genfavicon-256.png",
-      "type": "image/png",
-      "sizes": "256x256"
-    },
-    {
-      "src": "/genfavicon-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "500x500",
+      "purpose": "any maskable"
     }
   ],
-  "theme_color": "#000000",
-  "background_color": "#000000",
+  "theme_color": "#1e1b4b",
+  "background_color": "#1e1b4b",
   "display": "standalone"
 }

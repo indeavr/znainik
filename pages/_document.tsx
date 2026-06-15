@@ -1,54 +1,37 @@
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 
+import { brand } from '../lib/brand'
+
 export default class MyDocument extends Document {
   override render() {
+    const icon = brand.logos.icon
+    const appIcon = brand.logos.appIcon
+
     return (
       <Html lang='bg'>
         <Head>
-          <link rel='shortcut icon' href='/genfavicon-256.png' />
-          <link
-            rel='icon'
-            type='image/png'
-            sizes='32x32'
-            href='/genfavicon-32.png'
-          />
-          <link
-            rel='icon'
-            type='image/png'
-            sizes='16x16'
-            href='/genfavicon-16.png'
-          />
-          <link
-            rel='icon'
-            type='image/png'
-            sizes='128x128'
-            href='/genfavicon-128.png'
-          />
-          <link
-            rel='icon'
-            type='image/png'
-            sizes='180x180'
-            href='/genfavicon-180.png'
-          />
+          <link rel='shortcut icon' href={icon} />
+          <link rel='icon' type='image/png' sizes='32x32' href={icon} />
+          <link rel='icon' type='image/png' sizes='16x16' href={icon} />
+          <link rel='icon' type='image/png' sizes='128x128' href={icon} />
+          <link rel='icon' type='image/png' sizes='180x180' href={appIcon} />
+          <link rel='icon' type='image/png' sizes='512x512' href={appIcon} />
 
           <link rel='manifest' href='/manifest.json' />
-          
-          {/* Add preconnect for performance */}
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          
-          {/* Add preload for critical resources */}
-          <link rel="preload" href="/genfavicon-256.png" as="image" />
-          
-          {/* Apple Touch Icons for iOS */}
-          <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png" />
-          <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png" />
-          <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
-          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-          
-          {/* Hotjar Tracking Code */}
-          <script src="https://t.contentsquare.net/uxa/9f0e11a01d357.js" />
+
+          <link rel='preconnect' href='https://fonts.googleapis.com' />
+          <link
+            rel='preconnect'
+            href='https://fonts.gstatic.com'
+            crossOrigin='anonymous'
+          />
+
+          <link rel='preload' href={icon} as='image' />
+
+          <link rel='apple-touch-icon' href={appIcon} />
+          <link rel='apple-touch-icon' sizes='180x180' href={appIcon} />
+
+          <script src='https://t.contentsquare.net/uxa/9f0e11a01d357.js' />
         </Head>
 
         <body>

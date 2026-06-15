@@ -5,6 +5,7 @@ import cs from 'classnames'
 import * as React from 'react'
 import { Breadcrumbs, Header, Search, useNotionContext } from 'react-notion-x'
 
+import { BrandLogo } from '@/components/BrandLogo'
 import { isSearchEnabled, navigationLinks, navigationStyle } from '@/lib/config'
 import { useDarkMode } from '@/lib/use-dark-mode'
 import { useHeaderHidden } from '@/lib/use-scroll-direction'
@@ -50,6 +51,10 @@ export function NotionPageHeader({
       className={cs('notion-header', headerHidden && styles.headerScrollHidden)}
     >
       <div className='notion-nav-header'>
+        <a href='/' className='zn-notion-brand' aria-label='Знайник — начало'>
+          <BrandLogo variant='header' priority />
+        </a>
+
         <Breadcrumbs block={block} rootOnly={true} />
 
         <div className='notion-nav-header-rhs breadcrumbs'>
@@ -84,6 +89,13 @@ export function NotionPageHeader({
               }
             })
             .filter(Boolean)}
+
+          <a
+            href='/prikazki'
+            className={cs(styles.navLink, 'breadcrumb', 'button')}
+          >
+            Приказки
+          </a>
 
           <a href='/dao' className={cs(styles.navLink, 'breadcrumb', 'button')}>
             Дао

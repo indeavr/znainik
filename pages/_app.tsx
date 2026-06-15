@@ -6,6 +6,8 @@ import 'styles/theme.css' // brand design tokens (must load before notion overri
 import 'styles/global.css' // global styles shared across the entire site
 import 'styles/notion.css' // global style overrides for notion
 import 'styles/prism-theme.css' // global style overrides for prism theme (optional)
+import 'styles/site.css' // marketing / knowledge-base UI (home, tags, palette, etc.)
+import 'styles/story.css' // interactive story-game experience (приказки)
 
 import type { AppProps } from 'next/app'
 import { IconContext } from '@react-icons/all-files'
@@ -17,6 +19,7 @@ import { useRouter } from 'next/router'
 import { posthog } from 'posthog-js'
 import * as React from 'react'
 
+import { CommandPalette } from '@/components/CommandPalette'
 import { ReadingProgress } from '@/components/ReadingProgress'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { bootstrap } from '@/lib/bootstrap-client'
@@ -84,6 +87,7 @@ function App({ Component, pageProps }: AppProps) {
       <div className={cs('app-root', fontSans.variable, fontSerif.variable)}>
         <ReadingProgress />
         <Component {...pageProps} />
+        <CommandPalette />
         <ScrollToTop />
         <SpeedInsights />
       </div>

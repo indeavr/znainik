@@ -25,7 +25,7 @@ export default siteConfig({
 
   // default notion icon and cover images for site-wide consistency (optional)
   // page-specific values will override these site-wide defaults
-  defaultPageIcon: null,
+  defaultPageIcon: '/logo/logo-circle.png',
   defaultPageCover: null,
   defaultPageCoverPosition: 0.5,
 
@@ -61,5 +61,11 @@ export default siteConfig({
     //   title: 'Contact',
     //   pageId: '6a29ebcb935a4f0689fe661ab5f3b8d1'
     // }
-  ]
+  ],
+
+  // Приказки — hub страница в Notion с вградени linked view на базите за
+  // епизоди (и по желание приказки). Сподели я в интернет и постави id-то тук.
+  // storiesNotionPageId: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  // База за епизоди (по избор; иначе се открива автоматично от hub-а):
+  // storiesEpisodesCollectionId: '329d629f9cd2806f85e3000b14c38421'
 })

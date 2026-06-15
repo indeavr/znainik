@@ -9,6 +9,7 @@ import { IoMoonSharp } from '@react-icons/all-files/io5/IoMoonSharp'
 import { IoSunnyOutline } from '@react-icons/all-files/io5/IoSunnyOutline'
 import * as React from 'react'
 
+import { BrandLogo } from '@/components/BrandLogo'
 import * as config from '@/lib/config'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
@@ -35,11 +36,16 @@ export function FooterImpl() {
 
   return (
     <footer className={styles.footer}>
-      <div className={styles.copyright}>
-        Copyright {currentYear} {config.author}
-      </div>
+      <a href='/' className={styles.brand} aria-label={config.name}>
+        <BrandLogo variant='wordmark' />
+      </a>
 
-      <div className={styles.settings}>
+      <div className={styles.footerRow}>
+        <div className={styles.copyright}>
+          Copyright {currentYear} {config.author}
+        </div>
+
+        <div className={styles.settings}>
         {hasMounted && (
           <a
             className={styles.toggleDarkMode}
@@ -136,6 +142,7 @@ export function FooterImpl() {
             <FaYoutube />
           </a>
         )}
+      </div>
       </div>
     </footer>
   )

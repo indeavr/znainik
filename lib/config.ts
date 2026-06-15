@@ -110,6 +110,29 @@ export const navigationLinks: Array<NavigationLink | undefined> = getSiteConfig(
 // Optional site search
 export const isSearchEnabled: boolean = getSiteConfig('isSearchEnabled', true)
 
+// Stories ("Приказки") — Notion hub page + optional database id overrides
+export const storiesNotionPageId: string | null = (() => {
+  const raw = (
+    getSiteConfig('storiesNotionPageId', null) ??
+    process.env.NOTION_STORIES_PAGE_ID ??
+    null
+  ) as string | null
+  if (!raw) return null
+  return parsePageId(raw, { uuid: false }) ?? null
+})()
+
+export const storiesEpisodesCollectionId: string | null = (() => {
+  const raw = getSiteConfig('storiesEpisodesCollectionId', null) as string | null
+  if (!raw) return null
+  return parsePageId(raw, { uuid: true }) ?? null
+})()
+
+export const storiesTalesCollectionId: string | null = (() => {
+  const raw = getSiteConfig('storiesTalesCollectionId', null) as string | null
+  if (!raw) return null
+  return parsePageId(raw, { uuid: true }) ?? null
+})()
+
 // ----------------------------------------------------------------------------
 
 // Optional redis instance for persisting preview images

@@ -4,7 +4,12 @@ import Image from 'next/legacy/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type PageBlock } from 'notion-types'
-import { formatDate, getBlockTitle, getPageProperty } from 'notion-utils'
+import {
+  estimatePageReadTime,
+  formatDate,
+  getBlockTitle,
+  getPageProperty
+} from 'notion-utils'
 import * as React from 'react'
 import BodyClassName from 'react-body-classname'
 import {
@@ -16,6 +21,7 @@ import { EmbeddedTweet, TweetNotFound, TweetSkeleton } from 'react-tweet'
 import { useSearchParam } from 'react-use'
 
 import type * as types from '@/lib/types'
+import { getAuthor } from '@/lib/authors'
 import * as config from '@/lib/config'
 import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import { mapImageUrl } from '@/lib/map-image-url'
@@ -23,12 +29,16 @@ import { getCanonicalPageUrl, mapPageUrl } from '@/lib/map-page-url'
 import { searchNotion } from '@/lib/search-notion'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
+import { AuthorCard } from './AuthorCard'
 import { Footer } from './Footer'
 import { Loading } from './Loading'
+import { Newsletter } from './Newsletter'
 import { NotionPageHeader } from './NotionPageHeader'
 import { Page404 } from './Page404'
 import { PageAside } from './PageAside'
 import { PageHead } from './PageHead'
+import { RelatedPosts } from './RelatedPosts'
+import { ShareButtons } from './ShareButtons'
 import styles from './styles.module.css'
 
 // -----------------------------------------------------------------------------
@@ -251,7 +261,68 @@ export function NotionPage({
     [block, recordMap, isBlogPost]
   )
 
-  const footer = React.useMemo(() => <Footer />, [])
+  const readMinutes = React.useMemo(() => {
+    if (!isBlogPost || !block || !recordMap) return 0
+    try {
+      const estimate = estimatePageReadTime(block, recordMap)
+      return Math.max(1, Math.round(estimate.totalReadTimeInMinutes))
+    } catch {
+      return 0
+    }
+  }, [isBlogPost, block, recordMap])
+
+  const publishedDate = React.useMemo(() => {
+    if (!isBlogPost || !block || !recordMap) return null
+    const ts =
+      getPageProperty<number>('Published', block, recordMap) ||
+      getPageProperty<number>('Date', block, recordMap) ||
+      getPageProperty<number>('Last Updated', block, recordMap)
+    if (!ts) return null
+    try {
+      return new Intl.DateTimeFormat('bg-BG', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(ts))
+    } catch {
+      return null
+    }
+  }, [isBlogPost, block, recordMap])
+
+  const footer = React.useMemo(() => {
+    if (!isBlogPost) {
+      return <Footer />
+    }
+
+    const articleTitle =
+      block && recordMap ? getBlockTitle(block, recordMap) : ''
+    const authorName =
+      block && recordMap
+        ? getPageProperty<string>('Author', block, recordMap)
+        : undefined
+    const author = getAuthor(authorName)
+
+    return (
+      <>
+        {(readMinutes > 0 || publishedDate) && (
+          <div className='zn-article-extras zn-meta-row'>
+            {publishedDate && <span>{publishedDate}</span>}
+            {publishedDate && readMinutes > 0 && (
+              <span className='zn-card-dot' />
+            )}
+            {readMinutes > 0 && <span>{readMinutes} мин четене</span>}
+          </div>
+        )}
+
+        <hr className='zn-divider' />
+        <ShareButtons title={articleTitle || ''} />
+        <AuthorCard author={author} />
+        {pageId && <RelatedPosts pageId={pageId} />}
+        <Newsletter />
+        <Footer />
+      </>
+    )
+  }, [isBlogPost, block, recordMap, readMinutes, publishedDate, pageId])
 
   if (router.isFallback) {
     return <Loading />
