@@ -20,6 +20,11 @@ import {
   type Site
 } from './types'
 
+function normalizeNotionUuid(raw: string): string {
+  const bare = raw.replace(/-/g, '')
+  return parsePageId(bare, { uuid: true }) ?? bare
+}
+
 export const rootNotionPageId: string = parsePageId(
   getSiteConfig('rootNotionPageId'),
   { uuid: false }
@@ -124,13 +129,13 @@ export const storiesNotionPageId: string | null = (() => {
 export const storiesEpisodesCollectionId: string | null = (() => {
   const raw = getSiteConfig('storiesEpisodesCollectionId', null) as string | null
   if (!raw) return null
-  return parsePageId(raw, { uuid: true }) ?? null
+  return normalizeNotionUuid(raw)
 })()
 
 export const storiesTalesCollectionId: string | null = (() => {
   const raw = getSiteConfig('storiesTalesCollectionId', null) as string | null
   if (!raw) return null
-  return parsePageId(raw, { uuid: true }) ?? null
+  return normalizeNotionUuid(raw)
 })()
 
 // ----------------------------------------------------------------------------

@@ -3,7 +3,6 @@ import {
   getBlockTitle,
   getPageProperty,
   getTextContent,
-  idToUuid,
   parsePageId
 } from 'notion-utils'
 import pMemoize from 'p-memoize'
@@ -18,6 +17,7 @@ import { getCanonicalPageId } from './get-canonical-page-id'
 import { getNotionBlockValue, getNotionCollectionValue } from './get-notion-block-value'
 import { mapImageUrl } from './map-image-url'
 import { notion } from './notion-api'
+import { normalizeNotionApiRecordMap } from './notion-record-map'
 import { withNotionRetry } from './notion-retry'
 import { type Episode, type Tale } from './story'
 
@@ -55,6 +55,11 @@ interface EpisodeDraft extends Episode {
   order: number | null
   taleIds: string[]
   taleKey: string | null
+}
+
+function toNotionUuid(id: string): string {
+  const bare = id.replace(/-/g, '')
+  return parsePageId(bare, { uuid: true }) ?? id
 }
 
 function firstStringProperty(
@@ -98,7 +103,7 @@ function getCollectionSchema(
   recordMap: ExtendedRecordMap,
   collectionId: string
 ): Record<string, SchemaProp> {
-  return getNotionCollectionValue(recordMap.collection?.[collectionId])?.schema ?? {}
+  return getNotionCollectionValue(recordMap.collection?.[toNotionUuid(collectionId)])?.schema ?? {}
 }
 
 function findPropertyName(
@@ -129,15 +134,15 @@ function collectCollectionIds(recordMap: ExtendedRecordMap): Set<string> {
   const ids = new Set<string>()
 
   for (const id of Object.keys(recordMap.collection_query ?? {})) {
-    ids.add(idToUuid(id))
+    ids.add(toNotionUuid(id))
   }
   for (const id of Object.keys(recordMap.collection ?? {})) {
-    ids.add(idToUuid(id))
+    ids.add(toNotionUuid(id))
   }
   for (const raw of Object.values(recordMap.block ?? {})) {
     const block = getNotionBlockValue(raw)
     if (block?.parent_table === 'collection' && block.parent_id) {
-      ids.add(idToUuid(block.parent_id))
+      ids.add(toNotionUuid(block.parent_id))
     }
   }
 
@@ -148,7 +153,7 @@ function getCollectionName(
   recordMap: ExtendedRecordMap,
   collectionId: string
 ): string {
-  const raw = getNotionCollectionValue(recordMap.collection?.[collectionId])?.name
+  const raw = getNotionCollectionValue(recordMap.collection?.[toNotionUuid(collectionId)])?.name
   if (!raw) return ''
   return getTextContent(raw).toLowerCase()
 }
@@ -159,10 +164,15 @@ function detectStoryCollections(recordMap: ExtendedRecordMap): {
 } {
   const collectionIds = collectCollectionIds(recordMap)
 
-  let episodesCollectionId =
-    storiesEpisodesCollectionId && idToUuid(storiesEpisodesCollectionId)
-  let talesCollectionId =
-    storiesTalesCollectionId && idToUuid(storiesTalesCollectionId)
+  let episodesCollectionId = storiesEpisodesCollectionId
+  let talesCollectionId = storiesTalesCollectionId
+
+  if (episodesCollectionId) {
+    episodesCollectionId = toNotionUuid(episodesCollectionId)
+  }
+  if (talesCollectionId) {
+    talesCollectionId = toNotionUuid(talesCollectionId)
+  }
 
   if (!episodesCollectionId) {
     for (const cid of collectionIds) {
@@ -222,7 +232,7 @@ function getCollectionPageIds(
   recordMap: ExtendedRecordMap,
   collectionId: string
 ): string[] {
-  const cq = recordMap.collection_query?.[collectionId]
+  const cq = recordMap.collection_query?.[toNotionUuid(collectionId)]
   const ids = new Set<string>()
 
   if (cq) {
@@ -236,7 +246,7 @@ function getCollectionPageIds(
         )?.collection_group_results?.blockIds ||
         []
       for (const id of blockIds) {
-        ids.add(idToUuid(id))
+        ids.add(toNotionUuid(id))
       }
     }
   }
@@ -247,9 +257,9 @@ function getCollectionPageIds(
       if (
         block?.type === 'page' &&
         block.parent_table === 'collection' &&
-        idToUuid(block.parent_id) === collectionId
+        toNotionUuid(block.parent_id) === toNotionUuid(collectionId)
       ) {
-        ids.add(idToUuid(block.id))
+        ids.add(toNotionUuid(block.id))
       }
     }
   }
@@ -294,15 +304,55 @@ function slugifyTitle(title: string): string {
     .replaceAll(/^-|-$/g, '')
 }
 
+function extractRelationPageIds(
+  block: Block,
+  recordMap: ExtendedRecordMap,
+  propName: string | undefined
+): string[] {
+  if (!propName || !block.properties) return []
+
+  const collection = getNotionCollectionValue(
+    recordMap.collection?.[block.parent_id]
+  )?.schema
+  if (!collection) return []
+
+  const propertyId = Object.keys(collection).find(
+    (key) => collection[key]?.name === propName
+  )
+  if (!propertyId) return []
+
+  const decorations = block.properties[propertyId]
+  if (!Array.isArray(decorations)) return []
+
+  const pageIds: string[] = []
+  for (const decoration of decorations) {
+    if (!Array.isArray(decoration) || decoration.length < 2) continue
+    if (decoration[0] !== '‣') continue
+    const pagePointer = (decoration[1] as unknown[] | undefined)?.[0]
+    if (
+      Array.isArray(pagePointer) &&
+      pagePointer.length > 1 &&
+      pagePointer[0] === 'p' &&
+      typeof pagePointer[1] === 'string'
+    ) {
+      pageIds.push(toNotionUuid(pagePointer[1]))
+    }
+  }
+  return pageIds
+}
+
 function getRelationPageIds(
   block: Block,
   recordMap: ExtendedRecordMap,
   propName: string | undefined
 ): string[] {
+  const fromRelation = extractRelationPageIds(block, recordMap, propName)
+  if (fromRelation.length) return fromRelation
+
   if (!propName) return []
   const value = getPageProperty<string[] | string>(propName, block, recordMap)
   if (Array.isArray(value)) {
-    return value.map((id) => idToUuid(id)).filter(Boolean)
+    return value.map((id) => toNotionUuid(id)).filter(Boolean)
   }
   if (typeof value === 'string' && value) {
     const parsed = parsePageId(value, { uuid: true })
@@ -329,7 +379,7 @@ function parseTaleDraft(
     ''
 
   return {
-    id: idToUuid(block.id),
+    id: toNotionUuid(block.id),
     slug,
     title,
     subtitle: firstStringProperty(SUBTITLE_PROPS, block, recordMap) || undefined,
@@ -361,7 +411,7 @@ function parseEpisodeDraft(
     title,
     icon: episodeIcon(block, recordMap),
     summary: firstStringProperty(SUMMARY_PROPS, block, recordMap) || undefined,
-    notionPageId: idToUuid(block.id),
+    notionPageId: toNotionUuid(block.id),
     heroes: parseHeroIds(block, recordMap),
     order: firstNumberProperty(ORDER_PROPS, block, recordMap),
     taleIds: getRelationPageIds(block, recordMap, taleRelationProp),
@@ -369,25 +419,131 @@ function parseEpisodeDraft(
   }
 }
 
+const STORY_PAGE_OPTIONS = {
+  fetchCollections: true,
+  fetchRelationPages: true,
+  concurrency: 1,
+  collectionReducerLimit: 999
+} as const
+
+function mergeRecordMaps(...maps: ExtendedRecordMap[]): ExtendedRecordMap {
+  const merged: ExtendedRecordMap = {
+    block: {},
+    collection: {},
+    collection_view: {},
+    collection_query: {},
+    notion_user: {},
+    signed_urls: {}
+  }
+
+  for (const recordMap of maps) {
+    merged.block = { ...merged.block, ...recordMap.block }
+    merged.collection = { ...merged.collection, ...recordMap.collection }
+    merged.collection_view = {
+      ...merged.collection_view,
+      ...recordMap.collection_view
+    }
+    merged.notion_user = { ...merged.notion_user, ...recordMap.notion_user }
+    merged.signed_urls = { ...merged.signed_urls, ...recordMap.signed_urls }
+
+    for (const [collectionId, views] of Object.entries(
+      recordMap.collection_query ?? {}
+    )) {
+      merged.collection_query![collectionId] = {
+        ...merged.collection_query![collectionId],
+        ...views
+      }
+    }
+  }
+
+  normalizeNotionApiRecordMap(merged)
+  return merged
+}
+
+async function getCollectionParentPageId(
+  collectionId: string
+): Promise<string | null> {
+  const response = (await withNotionRetry(() =>
+    notion.fetch({
+      endpoint: 'syncRecordValuesMain',
+      body: {
+        requests: [{ table: 'collection', id: collectionId, version: -1 }]
+      }
+    })
+  )) as {
+    recordMap?: { collection?: Record<string, { value?: unknown }> }
+  }
+
+  const collection = getNotionCollectionValue(
+    response.recordMap?.collection?.[collectionId]
+  )
+  const parentId = collection?.parent_id
+  if (!parentId || collection?.parent_table !== 'block') {
+    return null
+  }
+  return toNotionUuid(parentId)
+}
+
+async function fetchStoryDatabasePage(
+  collectionId: string
+): Promise<ExtendedRecordMap | null> {
+  const pageId = await getCollectionParentPageId(collectionId)
+  if (!pageId) {
+    if (isDev) {
+      console.warn(
+        `story: could not resolve parent page for collection ${collectionId}`
+      )
+    }
+    return null
+  }
+
+  return withNotionRetry(() => notion.getPage(pageId, STORY_PAGE_OPTIONS))
+}
+
+async function fetchStoriesRecordMapFromCollections(): Promise<ExtendedRecordMap | null> {
+  const talesCollectionId = storiesTalesCollectionId
+    ? toNotionUuid(storiesTalesCollectionId)
+    : null
+  const episodesCollectionId = storiesEpisodesCollectionId
+    ? toNotionUuid(storiesEpisodesCollectionId)
+    : null
+
+  if (!episodesCollectionId) {
+    return null
+  }
+
+  const collectionIds = [
+    episodesCollectionId,
+    talesCollectionId && talesCollectionId !== episodesCollectionId
+      ? talesCollectionId
+      : null
+  ].filter(Boolean) as string[]
+
+  const maps = (
+    await Promise.all(collectionIds.map((id) => fetchStoryDatabasePage(id)))
+  ).filter(Boolean) as ExtendedRecordMap[]
+
+  if (!maps.length) {
+    return null
+  }
+
+  return mergeRecordMaps(...maps)
+}
+
 /**
  * Loads the stories hub page (with embedded episode / tale databases).
+ * Falls back to the published full-page databases when only collection IDs
+ * are configured.
  * Memoized for the duration of a build step.
  */
 export const fetchStoriesRecordMap = pMemoize(
   async (): Promise<ExtendedRecordMap | null> => {
-    const pageId = storiesNotionPageId
-    if (!pageId) {
-      return null
+    if (storiesNotionPageId) {
+      const pageId = storiesNotionPageId
+      return withNotionRetry(() => notion.getPage(pageId, STORY_PAGE_OPTIONS))
     }
 
-    return withNotionRetry(() =>
-      notion.getPage(pageId, {
-        fetchCollections: true,
-        fetchRelationPages: true,
-        concurrency: 1,
-        collectionReducerLimit: 999
-      })
-    )
+    return fetchStoriesRecordMapFromCollections()
   }
 )
 
@@ -530,6 +686,33 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
   )
 }
 
+function serializeEpisode(episode: Episode): Episode {
+  return {
+    id: episode.id,
+    title: episode.title,
+    icon: episode.icon,
+    ...(episode.summary ? { summary: episode.summary } : {}),
+    ...(episode.content?.length ? { content: episode.content } : {}),
+    ...(episode.notionPageId ? { notionPageId: episode.notionPageId } : {}),
+    ...(episode.href ? { href: episode.href } : {}),
+    ...(episode.heroes?.length ? { heroes: episode.heroes } : {})
+  }
+}
+
+/** Next.js getStaticProps cannot serialize `undefined` optional fields. */
+function serializeTale(tale: Tale): Tale {
+  return {
+    id: tale.id,
+    slug: tale.slug,
+    title: tale.title,
+    intro: tale.intro,
+    heroIds: tale.heroIds,
+    episodes: tale.episodes.map(serializeEpisode),
+    ...(tale.subtitle ? { subtitle: tale.subtitle } : {}),
+    ...(tale.cover ? { cover: tale.cover } : {})
+  }
+}
+
 export async function loadTales(): Promise<Tale[]> {
   try {
     const recordMap = await fetchStoriesRecordMap()
@@ -539,10 +722,10 @@ export async function loadTales(): Promise<Tale[]> {
     const tales = getTalesFromRecordMap(recordMap)
     if (!tales.length && isDev) {
       console.warn(
-        'story: storiesNotionPageId is set but no tales were parsed. Check that the hub page embeds the episodes database and rows are public.'
+        'story: no tales were parsed from Notion. Check that episode rows link to a tale, Public is enabled, and the databases are published to the web.'
       )
     }
-    return tales
+    return tales.map(serializeTale)
   } catch (err) {
     console.error('story: failed to load tales from Notion', err)
     return []

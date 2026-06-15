@@ -517,3 +517,51 @@ html {
 .notion-text {
   line-height: 1.75;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Table of contents — clip long headings instead of stretching the aside    */
+/* -------------------------------------------------------------------------- */
+
+.notion-table-of-contents-item {
+  min-width: 0;
+}
+
+.notion-table-of-contents-item-body {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1300px) {
+  .notion-page-content-has-aside .notion-aside {
+    flex: 0 0 220px;
+    width: 220px;
+    max-width: 220px;
+    min-width: 0;
+    align-items: stretch;
+  }
+
+  .notion-aside-table-of-contents {
+    width: 100%;
+    max-width: 220px;
+    min-width: 0;
+    align-items: stretch;
+  }
+
+  .notion-aside-table-of-contents .notion-table-of-contents {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .notion-aside-table-of-contents .notion-table-of-contents-item {
+    max-width: 100%;
+  }
+
+  /* react-notion-x sets inline-block on the label span — block + ellipsis */
+  .notion-aside-table-of-contents .notion-table-of-contents-item-body {
+    display: block !important;
+    border-bottom: none;
+  }
+}

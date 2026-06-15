@@ -4,7 +4,7 @@ import * as React from 'react'
 
 import { type Hero } from '@/lib/story'
 
-/** Grid of hero portraits. Clicking a portrait opens the hero detail panel. */
+/** Compact hero strip — opens the detail modal on click. */
 export function HeroCodex({
   heroes,
   activeId,
@@ -17,28 +17,24 @@ export function HeroCodex({
   if (!heroes.length) return null
 
   return (
-    <div className='zn-codex'>
-      <h2 className='zn-codex-title'>Кодекс на героите</h2>
-      <p className='zn-codex-sub'>Цъкни герой, за да научиш повече за него.</p>
-
-      <ul className='zn-codex-grid'>
+    <div className='zn-codex-strip' aria-label='Кодекс на героите'>
+      <span className='zn-codex-strip-label'>Герои</span>
+      <ul className='zn-codex-strip-list'>
         {heroes.map((hero) => (
           <li key={hero.id}>
             <button
               type='button'
               className={cs(
-                'zn-hero-card',
+                'zn-codex-strip-btn',
                 activeId === hero.id && 'is-active'
               )}
               onClick={() => onOpen(hero.id)}
+              title={hero.title ? `${hero.name} — ${hero.title}` : hero.name}
             >
-              <span className='zn-hero-portrait'>
-                <img src={hero.image} alt={hero.name} loading='lazy' />
+              <span className='zn-codex-strip-portrait'>
+                <img src={hero.image} alt='' loading='lazy' />
               </span>
-              <span className='zn-hero-name'>{hero.name}</span>
-              {hero.title && (
-                <span className='zn-hero-role'>{hero.title}</span>
-              )}
+              <span className='zn-codex-strip-name'>{hero.name}</span>
             </button>
           </li>
         ))}

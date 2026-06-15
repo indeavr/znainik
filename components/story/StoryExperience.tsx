@@ -10,7 +10,7 @@ import { useDarkMode } from '@/lib/use-dark-mode'
 import { EpisodeTimeline } from './EpisodeTimeline'
 import { HeroCodex, HeroDetail } from './HeroCodex'
 
-/** Interactive tale page: timeline + episode body + sticky hero codex. */
+/** Interactive tale page: timeline + centered episode body + compact hero strip. */
 export function StoryExperience({
   tale,
   heroes,
@@ -71,14 +71,19 @@ export function StoryExperience({
         onSelect={selectEpisode}
       />
 
+      {heroes.length > 0 && (
+        <HeroCodex
+          heroes={heroes}
+          activeId={openHeroId}
+          onOpen={(id) => setOpenHeroId(id)}
+        />
+      )}
+
       <div className='zn-story-layout'>
-        <div className='zn-story-main'>
+        <article className='zn-story-content' ref={contentRef}>
           {episode && (
-            <article className='zn-story-content' ref={contentRef}>
+            <>
               <header className='zn-story-content-head'>
-                <span className='zn-story-content-step'>
-                  Епизод {activeIndex + 1} от {tale.episodes.length}
-                </span>
                 <h2 className='zn-story-content-title'>
                   <span className='zn-story-content-icon'>{episode.icon}</span>
                   {episode.title}
@@ -157,17 +162,9 @@ export function StoryExperience({
                   Напред <IoArrowForward />
                 </button>
               </nav>
-            </article>
+            </>
           )}
-        </div>
-
-        <aside className='zn-story-aside'>
-          <HeroCodex
-            heroes={heroes}
-            activeId={openHeroId}
-            onOpen={(id) => setOpenHeroId(id)}
-          />
-        </aside>
+        </article>
       </div>
 
       {openHero && (

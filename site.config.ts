@@ -63,9 +63,12 @@ export default siteConfig({
     // }
   ],
 
-  // Приказки — hub страница в Notion с вградени linked view на базите за
-  // епизоди (и по желание приказки). Сподели я в интернет и постави id-то тук.
+  // Приказки — по избор hub страница с linked view на базите.
+  // Ако липсва, сайтът зарежда директно публикуваните full-page бази
+  // чрез collection ID-тата по-долу (Publish to web на всяка база).
   // storiesNotionPageId: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-  // База за епизоди (по избор; иначе се открива автоматично от hub-а):
-  // storiesEpisodesCollectionId: '329d629f9cd2806f85e3000b14c38421'
+  //
+  // Канонични data sources (collection IDs):
+  storiesTalesCollectionId: '1d60ef973b29403794d54f3cab682954',
+  storiesEpisodesCollectionId: '05a02d8f95e54be6a59a53b0fdef5522'
 })

@@ -52,6 +52,7 @@
   --page-padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
   --section-gap-y: clamp(1.75rem, 4.5vw, 3.5rem);
   --header-height: 64px;
+  --notion-header-height: var(--header-height);
 
   /* react-notion-x overrides (light) */
   --fg-color: #2a2730;
@@ -59,7 +60,6 @@
   --bg-color: #ffffff;
   --select-color-0: var(--brand);
   --notion-max-width: 720px;
-  --notion-header-height: 56px;
 }
 
 .dark-mode {
