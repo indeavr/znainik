@@ -14,8 +14,8 @@ import { site } from '@/lib/config'
 import { loadTales } from '@/lib/get-stories-from-notion'
 import { notion } from '@/lib/notion-api'
 import { withNotionRetry } from '@/lib/notion-retry'
-import { findCanonicalNotionPageId } from '@/lib/story-canonical'
 import { type Tale } from '@/lib/story'
+import { findCanonicalNotionPageId } from '@/lib/story-canonical'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
 interface TaleProps {
