@@ -3,27 +3,25 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type ExtendedRecordMap } from 'notion-types'
 import * as React from 'react'
+import { NotionRenderer } from 'react-notion-x'
 
 import { Footer } from '@/components/Footer'
 import { PageHead } from '@/components/PageHead'
 import { SiteHeader } from '@/components/SiteHeader'
+import { HeroTags } from '@/components/story/HeroTags'
 import { StoryExperience } from '@/components/story/StoryExperience'
 import { site } from '@/lib/config'
 import { loadTales } from '@/lib/get-stories-from-notion'
 import { notion } from '@/lib/notion-api'
 import { withNotionRetry } from '@/lib/notion-retry'
-import {
-  getTaleHeroes,
-  getTaleNotionPageIds,
-  type Hero,
-  type Tale
-} from '@/lib/story'
+import { findCanonicalNotionPageId } from '@/lib/story-canonical'
+import { type Tale } from '@/lib/story'
+import { useDarkMode } from '@/lib/use-dark-mode'
 
 interface TaleProps {
   tale: Tale
-  heroes: Hero[]
-  /** Record maps for episodes that link a Notion page (keyed by episode id). */
   notionPages: Record<string, ExtendedRecordMap>
+  canonicalPage: ExtendedRecordMap | null
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
@@ -45,30 +43,70 @@ export const getStaticProps: GetStaticProps<TaleProps> = async ({ params }) => {
   }
 
   const notionPages: Record<string, ExtendedRecordMap> = {}
-  if (getTaleNotionPageIds(tale).length > 0) {
-    for (const episode of tale.episodes) {
-      if (!episode.notionPageId) continue
-      try {
-        notionPages[episode.id] = await withNotionRetry(() =>
-          notion.getPage(episode.notionPageId!)
+  let canonicalPage: ExtendedRecordMap | null = null
+
+  for (const episode of tale.episodes) {
+    if (!episode.notionPageId) continue
+    try {
+      notionPages[episode.id] = await withNotionRetry(() =>
+        notion.getPage(episode.notionPageId!)
+      )
+    } catch (err) {
+      console.error(
+        'story: failed to fetch notion page',
+        episode.notionPageId,
+        err
+      )
+    }
+  }
+
+  if (tale.notionPageId) {
+    try {
+      const talePage = await withNotionRetry(() =>
+        notion.getPage(tale.notionPageId!)
+      )
+      const canonicalId = findCanonicalNotionPageId(talePage, tale.notionPageId!)
+      if (canonicalId) {
+        const episodeMatch = tale.episodes.find(
+          (ep) => ep.notionPageId === canonicalId
         )
-      } catch (err) {
-        console.error(
-          'story: failed to fetch notion page',
-          episode.notionPageId,
-          err
-        )
+        canonicalPage =
+          (episodeMatch && notionPages[episodeMatch.id]) ||
+          (await withNotionRetry(() => notion.getPage(canonicalId)))
       }
+    } catch (err) {
+      console.error('story: failed to resolve canonical page', tale.notionPageId, err)
     }
   }
 
   return {
-    props: { tale, heroes: getTaleHeroes(tale), notionPages },
+    props: {
+      tale,
+      notionPages,
+      canonicalPage
+    },
     revalidate: 300
   }
 }
 
-export default function TalePage({ tale, heroes, notionPages }: TaleProps) {
+function CanonicalBody({ recordMap }: { recordMap: ExtendedRecordMap }) {
+  const { isDarkMode } = useDarkMode()
+  return (
+    <div className='zn-story-notion zn-story-canonical notion'>
+      <NotionRenderer
+        recordMap={recordMap}
+        fullPage={false}
+        darkMode={isDarkMode}
+      />
+    </div>
+  )
+}
+
+export default function TalePage({
+  tale,
+  notionPages,
+  canonicalPage
+}: TaleProps) {
   const router = useRouter()
   if (router.isFallback || !tale) return null
 
@@ -90,15 +128,20 @@ export default function TalePage({ tale, heroes, notionPages }: TaleProps) {
           </Link>
           <h1 className='zn-story-title'>{tale.title}</h1>
           {tale.subtitle && <p className='zn-story-subtitle'>{tale.subtitle}</p>}
-          <p className='zn-story-intro'>{tale.intro}</p>
+          {tale.intro && !canonicalPage && (
+            <p className='zn-story-intro'>{tale.intro}</p>
+          )}
+          <HeroTags slugs={tale.heroSlugs} />
         </section>
 
+        {canonicalPage && (
+          <section className='zn-container zn-section zn-story-canonical-wrap'>
+            <CanonicalBody recordMap={canonicalPage} />
+          </section>
+        )}
+
         <section className='zn-container zn-section'>
-          <StoryExperience
-            tale={tale}
-            heroes={heroes}
-            notionPages={notionPages}
-          />
+          <StoryExperience tale={tale} notionPages={notionPages} />
         </section>
       </main>
 

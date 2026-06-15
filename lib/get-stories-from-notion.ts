@@ -20,6 +20,7 @@ import { notion } from './notion-api'
 import { normalizeNotionApiRecordMap } from './notion-record-map'
 import { withNotionRetry } from './notion-retry'
 import { type Episode, type Tale } from './story'
+import { parseHeroSlugs } from './story-heroes'
 
 type SchemaProp = Collection['schema'][string]
 
@@ -47,7 +48,8 @@ interface TaleDraft {
   subtitle?: string
   cover?: string
   intro: string
-  heroIds: string[]
+  heroSlugs: string[]
+  notionPageId?: string
   order: number | null
 }
 
@@ -58,7 +60,7 @@ interface EpisodeDraft extends Episode {
 }
 
 function toNotionUuid(id: string): string {
-  const bare = id.replace(/-/g, '')
+  const bare = id.replaceAll('-', '')
   return parsePageId(bare, { uuid: true }) ?? id
 }
 
@@ -267,18 +269,16 @@ function getCollectionPageIds(
   return [...ids]
 }
 
-function parseHeroIds(
+function parseHeroSlugsFromBlock(
   block: Block,
   recordMap: ExtendedRecordMap
-): string[] | undefined {
+): string[] {
   for (const name of HERO_PROPS) {
     const value = getPageProperty<string | string[]>(name, block, recordMap)
-    if (!value) continue
-    const list = Array.isArray(value) ? value : String(value).split(/[,;]/)
-    const ids = list.map((item) => String(item).trim()).filter(Boolean)
-    if (ids.length) return ids
+    const slugs = parseHeroSlugs(value)
+    if (slugs.length) return slugs
   }
-  return undefined
+  return []
 }
 
 function resolveCover(block: Block, recordMap: ExtendedRecordMap): string | undefined {
@@ -385,7 +385,8 @@ function parseTaleDraft(
     subtitle: firstStringProperty(SUBTITLE_PROPS, block, recordMap) || undefined,
     cover: resolveCover(block, recordMap),
     intro,
-    heroIds: parseHeroIds(block, recordMap) ?? [],
+    heroSlugs: parseHeroSlugsFromBlock(block, recordMap),
+    notionPageId: toNotionUuid(block.id),
     order: firstNumberProperty(ORDER_PROPS, block, recordMap)
   }
 }
@@ -412,7 +413,7 @@ function parseEpisodeDraft(
     icon: episodeIcon(block, recordMap),
     summary: firstStringProperty(SUMMARY_PROPS, block, recordMap) || undefined,
     notionPageId: toNotionUuid(block.id),
-    heroes: parseHeroIds(block, recordMap),
+    heroes: parseHeroSlugsFromBlock(block, recordMap),
     order: firstNumberProperty(ORDER_PROPS, block, recordMap),
     taleIds: getRelationPageIds(block, recordMap, taleRelationProp),
     taleKey
@@ -643,7 +644,7 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
             slug: taleKey.slice(4),
             title: taleKey.slice(4),
             intro: episodes[0]?.summary ?? '',
-            heroIds: [],
+            heroSlugs: [],
             order: null
           }
         : null)
@@ -659,11 +660,6 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
       (a, b) => (a.order ?? 999) - (b.order ?? 999) || a.title.localeCompare(b.title)
     )
 
-    const heroIds = new Set(draft.heroIds)
-    for (const ep of sortedEpisodes) {
-      for (const id of ep.heroes ?? []) heroIds.add(id)
-    }
-
     tales.push({
       id: draft.slug,
       slug: draft.slug,
@@ -671,7 +667,8 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
       subtitle: draft.subtitle,
       cover: draft.cover,
       intro: draft.intro || sortedEpisodes[0]?.summary || '',
-      heroIds: [...heroIds],
+      heroSlugs: draft.heroSlugs,
+      notionPageId: draft.notionPageId,
       episodes: sortedEpisodes.map(({ order: _o, taleIds: _t, taleKey: _k, ...ep }) => ep)
     })
   }
@@ -706,10 +703,11 @@ function serializeTale(tale: Tale): Tale {
     slug: tale.slug,
     title: tale.title,
     intro: tale.intro,
-    heroIds: tale.heroIds,
+    heroSlugs: tale.heroSlugs,
     episodes: tale.episodes.map(serializeEpisode),
     ...(tale.subtitle ? { subtitle: tale.subtitle } : {}),
-    ...(tale.cover ? { cover: tale.cover } : {})
+    ...(tale.cover ? { cover: tale.cover } : {}),
+    ...(tale.notionPageId ? { notionPageId: tale.notionPageId } : {})
   }
 }
 

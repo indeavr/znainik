@@ -21,7 +21,7 @@ import {
 } from './types'
 
 function normalizeNotionUuid(raw: string): string {
-  const bare = raw.replace(/-/g, '')
+  const bare = raw.replaceAll('-', '')
   return parsePageId(bare, { uuid: true }) ?? bare
 }
 

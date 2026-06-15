@@ -68,7 +68,9 @@ export default function PrikazkiIndex({ tales }: PrikazkiIndexProps) {
                       <span className='zn-tale-subtitle'>{tale.subtitle}</span>
                     )}
                     <span className='zn-tale-meta'>
-                      {tale.episodes.length} епизода · {tale.heroIds.length} герои
+                      {tale.episodes.length} епизода
+                      {tale.heroSlugs.length > 0 &&
+                        ` · ${tale.heroSlugs.length} герои`}
                     </span>
                   </span>
                 </Link>
