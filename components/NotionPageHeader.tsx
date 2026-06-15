@@ -85,8 +85,10 @@ export function NotionPageHeader({
             })
             .filter(Boolean)}
 
-          <a href="/dao" className="breadcrumb button">Дао</a>
-          
+          <a href='/dao' className={cs(styles.navLink, 'breadcrumb', 'button')}>
+            Дао
+          </a>
+
           <ToggleThemeButton />
 
           {isSearchEnabled && <Search block={block} title={null} />}

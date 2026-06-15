@@ -2,6 +2,7 @@ import 'katex/dist/katex.min.css' // used for rendering equations (optional)
 import 'prismjs/themes/prism-coy.css' // used for code syntax highlighting (optional)
 // import 'prismjs/themes/prism-okaidia.css' // this might be better for dark mode
 import 'react-notion-x/src/styles.css' // core styles shared by all of react-notion-x (required)
+import 'styles/theme.css' // brand design tokens (must load before notion overrides)
 import 'styles/global.css' // global styles shared across the entire site
 import 'styles/notion.css' // global style overrides for notion
 import 'styles/prism-theme.css' // global style overrides for prism theme (optional)
@@ -9,11 +10,15 @@ import 'styles/prism-theme.css' // global style overrides for prism theme (optio
 import type { AppProps } from 'next/app'
 import { IconContext } from '@react-icons/all-files'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import cs from 'classnames'
 import * as Fathom from 'fathom-client'
+import { Inter, Lora } from 'next/font/google'
 import { useRouter } from 'next/router'
 import { posthog } from 'posthog-js'
 import * as React from 'react'
 
+import { ReadingProgress } from '@/components/ReadingProgress'
+import { ScrollToTop } from '@/components/ScrollToTop'
 import { bootstrap } from '@/lib/bootstrap-client'
 import {
   fathomConfig,
@@ -23,6 +28,21 @@ import {
   posthogId
 } from '@/lib/config'
 
+// Cyrillic-first typography: a clean sans for UI/reading and an elegant serif
+// for headings, both self-hosted by next/font with the Cyrillic subset.
+const fontSans = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans',
+  display: 'swap',
+  weight: ['400', '500', '600', '700']
+})
+
+const fontSerif = Lora({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-serif',
+  display: 'swap',
+  weight: ['500', '600', '700']
+})
 
 // Only run bootstrap on client side
 if (!isServer) {
@@ -61,8 +81,12 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
-      <Component {...pageProps} />
-      <SpeedInsights />
+      <div className={cs('app-root', fontSans.variable, fontSerif.variable)}>
+        <ReadingProgress />
+        <Component {...pageProps} />
+        <ScrollToTop />
+        <SpeedInsights />
+      </div>
     </IconContext.Provider>
   )
 }
