@@ -15,6 +15,8 @@ export interface Article {
   emoji: string | null
   /** Unix epoch (ms) used for ordering; null when no date property exists. */
   date: number | null
+  /** Manual sort rank from Notion; higher = closer to the top. */
+  order: number | null
   tags: string[]
   featured: boolean
 }
@@ -33,6 +35,7 @@ const TAG_PROPS = [
   'Type'
 ]
 const FEATURED_PROPS = ['Featured', 'Препоръчано', 'Избрано', 'Pinned']
+const ORDER_PROPS = ['Order', 'Ред', '#', 'Rank', 'Приоритет', 'Priority']
 
 function firstStringProperty(
   names: string[],
@@ -62,6 +65,20 @@ function firstDateProperty(
   return null
 }
 
+function firstNumberProperty(
+  names: string[],
+  block: Block,
+  recordMap: ExtendedRecordMap
+): number | null {
+  for (const name of names) {
+    const value = getPageProperty<number>(name, block, recordMap)
+    if (typeof value === 'number' && !Number.isNaN(value)) {
+      return value
+    }
+  }
+  return null
+}
+
 function parseTags(
   block: Block,
   recordMap: ExtendedRecordMap
@@ -78,6 +95,20 @@ function parseTags(
     }
   }
   return []
+}
+
+/** Higher `order` first; missing order falls back to newest `date`. */
+export function compareArticles(a: Article, b: Article): number {
+  const ao = a.order
+  const bo = b.order
+  if (ao != null && bo != null && ao !== bo) return bo - ao
+  if (ao != null && bo == null) return -1
+  if (ao == null && bo != null) return 1
+  return (b.date ?? 0) - (a.date ?? 0)
+}
+
+export function sortArticles(articles: Article[]): Article[] {
+  return articles.toSorted(compareArticles)
 }
 
 /**
@@ -135,6 +166,7 @@ export function getArticlesFromRecordMap(
       cover,
       emoji,
       date: firstDateProperty(DATE_PROPS, block, recordMap),
+      order: firstNumberProperty(ORDER_PROPS, block, recordMap),
       tags: parseTags(block, recordMap),
       featured:
         firstStringProperty(FEATURED_PROPS, block, recordMap).toLowerCase() ===
@@ -143,8 +175,7 @@ export function getArticlesFromRecordMap(
     })
   }
 
-  // Newest first; undated articles sink to the bottom but keep stable order.
-  return articles.toSorted((a, b) => (b.date ?? 0) - (a.date ?? 0))
+  return sortArticles(articles)
 }
 
 /** Aggregates tag → count across a list of articles, sorted by frequency. */
