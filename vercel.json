@@ -2,6 +2,27 @@
   "functions": {
     "pages/api/revalidate.ts": {
       "maxDuration": 60
+    },
+    "pages/index.tsx": {
+      "maxDuration": 60
+    },
+    "pages/[pageId].tsx": {
+      "maxDuration": 60
+    },
+    "pages/tags/index.tsx": {
+      "maxDuration": 60
+    },
+    "pages/tags/[tag].tsx": {
+      "maxDuration": 60
+    },
+    "pages/oracle/index.tsx": {
+      "maxDuration": 60
+    },
+    "pages/prikazki/index.tsx": {
+      "maxDuration": 60
+    },
+    "pages/prikazki/[slug].tsx": {
+      "maxDuration": 60
     }
   }
 }

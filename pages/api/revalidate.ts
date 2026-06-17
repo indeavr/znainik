@@ -80,14 +80,14 @@ export default async function revalidate(
         ...(await collectShellPaths()),
         ...parseExtraPaths(extraParam)
       ]
-      const results = await revalidatePaths(res, paths, 3)
+      const results = await revalidatePaths(res, paths, 1)
       const allOk = results.every((r) => r.ok)
       return res.status(allOk ? 200 : 207).json({
         revalidated: allOk,
         mode: 'all',
         results,
         hint:
-          'For a single updated article also call path=/article-slug. To refresh all articles in batches use path=pages&offset=0&limit=8.'
+          'Revalidates paths one at a time. If you see 504, deploy with vercel.json maxDuration and retry path=/slug alone. With Deployment Protection enabled, add header x-vercel-protection-bypass.'
       })
     }
 
@@ -96,7 +96,7 @@ export default async function revalidate(
       const limit = Math.min(Math.max(1, Number(req.query.limit) || 8), 15)
       const allPaths = await collectArticlePaths()
       const batch = allPaths.slice(offset, offset + limit)
-      const results = await revalidatePaths(res, batch, 2)
+      const results = await revalidatePaths(res, batch, 1)
       const nextOffset = offset + batch.length
       const allOk = results.every((r) => r.ok)
       return res.status(allOk ? 200 : 207).json({
@@ -115,7 +115,7 @@ export default async function revalidate(
 
     if (mode === 'tags') {
       const paths = ['/tags', ...(await collectTagPaths())]
-      const results = await revalidatePaths(res, paths, 3)
+      const results = await revalidatePaths(res, paths, 1)
       const allOk = results.every((r) => r.ok)
       return res.status(allOk ? 200 : 207).json({
         revalidated: allOk,

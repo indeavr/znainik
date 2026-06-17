@@ -1,13 +1,13 @@
 import { type NextApiResponse } from 'next'
 
-import { domain, pageUrlOverrides, rootNotionPageId } from './config'
+import { pageUrlOverrides, rootNotionPageId } from './config'
 import {
   getArticlesFromRecordMap,
   getTagCounts,
   tagToSlug
 } from './get-articles'
 import { loadTales } from './get-stories-from-notion'
-import { resolveNotionPage } from './resolve-notion-page'
+import { getPage } from './notion'
 
 /** Listing / hub routes — refreshed by `path=all` (no full sitemap crawl). */
 export const SHELL_PATHS = [
@@ -81,8 +81,8 @@ export async function collectShellPaths(): Promise<string[]> {
 
 /** Article slugs from the root Notion collection (one fetch, not full sitemap). */
 export async function collectArticlePaths(): Promise<string[]> {
-  const props = await resolveNotionPage(domain)
-  const articles = getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+  const recordMap = await getPage(rootNotionPageId)
+  const articles = getArticlesFromRecordMap(recordMap, rootNotionPageId)
   const paths = new Set<string>(
     articles.map((article) => `/${article.slug}`)
   )
@@ -96,8 +96,8 @@ export async function collectArticlePaths(): Promise<string[]> {
 
 /** Tag listing pages from the root collection. */
 export async function collectTagPaths(): Promise<string[]> {
-  const props = await resolveNotionPage(domain)
-  const articles = getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+  const recordMap = await getPage(rootNotionPageId)
+  const articles = getArticlesFromRecordMap(recordMap, rootNotionPageId)
   const tags = getTagCounts(articles)
   return tags.map(({ tag }) => `/tags/${tagToSlug(tag)}`)
 }

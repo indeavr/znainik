@@ -11,6 +11,7 @@ import 'styles/story.css' // interactive story-game experience (приказки
 
 import type { AppProps } from 'next/app'
 import { IconContext } from '@react-icons/all-files'
+import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import cs from 'classnames'
 import * as Fathom from 'fathom-client'
@@ -90,6 +91,7 @@ function App({ Component, pageProps }: AppProps) {
         <CommandPalette />
         <ScrollToTop />
         <SpeedInsights />
+        <Analytics />
       </div>
     </IconContext.Provider>
   )
