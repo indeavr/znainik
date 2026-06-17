@@ -1,10 +1,10 @@
 import { type NextApiRequest, type NextApiResponse } from 'next'
 
-import { db } from '@/lib/db'
-
-function keyFor(id: string): string {
-  return `views:${id.replaceAll('-', '')}`
-}
+import { normalizeEngagementPageId } from '@/lib/engagement'
+import {
+  getEngagementCount,
+  incrementViewCount
+} from '@/lib/engagement-store'
 
 /**
  * Page view counter.
@@ -12,36 +12,35 @@ function keyFor(id: string): string {
  * GET  /api/views?id=<pageId>  -> { views }
  * POST /api/views  { id }       -> increments and returns { views }
  *
- * Persistence relies on the shared Keyv store. In production this MUST be backed
- * by Redis (set REDIS_* env vars), otherwise counts reset per serverless call.
+ * Persistence relies on the shared Keyv store (Redis in production).
  */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const id = String(
-    (req.method === 'POST'
-      ? (req.body as { id?: string } | undefined)?.id
-      : req.query.id) ?? ''
-  ).trim()
+  res.setHeader('Cache-Control', 'no-store')
 
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'method not allowed' })
+  }
+
+  const rawId =
+    req.method === 'POST'
+      ? String((req.body as { id?: string } | undefined)?.id ?? '')
+      : String(req.query.id ?? '')
+
+  const id = normalizeEngagementPageId(rawId)
   if (!id) {
     return res.status(400).json({ error: 'missing id' })
   }
 
   try {
-    const key = keyFor(id)
-
     if (req.method === 'POST') {
-      const current = Number((await db.get(key)) ?? 0)
-      const views = current + 1
-      await db.set(key, views)
-      res.setHeader('Cache-Control', 'no-store')
+      const views = await incrementViewCount(id)
       return res.status(200).json({ views })
     }
 
-    const views = Number((await db.get(key)) ?? 0)
-    res.setHeader('Cache-Control', 'no-store')
+    const views = await getEngagementCount('views', id)
     return res.status(200).json({ views })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)

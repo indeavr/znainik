@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type PageBlock } from 'notion-types'
 import {
-  estimatePageReadTime,
   formatDate,
   getBlockTitle,
   getPageProperty
@@ -23,7 +22,13 @@ import { useSearchParam } from 'react-use'
 import type * as types from '@/lib/types'
 import { getAuthor } from '@/lib/authors'
 import * as config from '@/lib/config'
+import { estimateReadTimeMinutes } from '@/lib/estimate-read-time'
 import { getNotionBlockValue } from '@/lib/get-notion-block-value'
+import {
+  formatBulgarianDate,
+  getPageAuthorName,
+  getPagePublishedTimestamp
+} from '@/lib/get-page-meta'
 import { mapImageUrl } from '@/lib/map-image-url'
 import { getCanonicalPageUrl, mapPageUrl } from '@/lib/map-page-url'
 import { searchNotion } from '@/lib/search-notion'
@@ -264,8 +269,7 @@ export function NotionPage({
   const readMinutes = React.useMemo(() => {
     if (!isBlogPost || !block || !recordMap) return 0
     try {
-      const estimate = estimatePageReadTime(block, recordMap)
-      return Math.max(1, Math.round(estimate.totalReadTimeInMinutes))
+      return estimateReadTimeMinutes(block, recordMap)
     } catch {
       return 0
     }
@@ -273,20 +277,15 @@ export function NotionPage({
 
   const publishedDate = React.useMemo(() => {
     if (!isBlogPost || !block || !recordMap) return null
-    const ts =
-      getPageProperty<number>('Published', block, recordMap) ||
-      getPageProperty<number>('Date', block, recordMap) ||
-      getPageProperty<number>('Last Updated', block, recordMap)
-    if (!ts) return null
-    try {
-      return new Intl.DateTimeFormat('bg-BG', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }).format(new Date(ts))
-    } catch {
-      return null
+    const ts = getPagePublishedTimestamp(block, recordMap)
+    return ts ? formatBulgarianDate(ts) : null
+  }, [isBlogPost, block, recordMap])
+
+  const author = React.useMemo(() => {
+    if (!isBlogPost || !block || !recordMap) {
+      return getAuthor(undefined)
     }
+    return getAuthor(getPageAuthorName(block, recordMap))
   }, [isBlogPost, block, recordMap])
 
   const footer = React.useMemo(() => {
@@ -296,18 +295,17 @@ export function NotionPage({
 
     const articleTitle =
       block && recordMap ? getBlockTitle(block, recordMap) : ''
-    const authorName =
-      block && recordMap
-        ? getPageProperty<string>('Author', block, recordMap)
-        : undefined
-    const author = getAuthor(authorName)
 
     return (
       <>
-        {(readMinutes > 0 || publishedDate) && (
+        {(publishedDate || readMinutes > 0 || author.name) && (
           <div className='zn-article-extras zn-meta-row'>
             {publishedDate && <span>{publishedDate}</span>}
-            {publishedDate && readMinutes > 0 && (
+            {publishedDate && author.name && (
+              <span className='zn-card-dot' />
+            )}
+            {author.name && <span>{author.name}</span>}
+            {(publishedDate || author.name) && readMinutes > 0 && (
               <span className='zn-card-dot' />
             )}
             {readMinutes > 0 && <span>{readMinutes} мин четене</span>}
@@ -322,7 +320,7 @@ export function NotionPage({
         <Footer />
       </>
     )
-  }, [isBlogPost, block, recordMap, readMinutes, publishedDate, pageId])
+  }, [isBlogPost, block, recordMap, readMinutes, publishedDate, pageId, author])
 
   if (router.isFallback) {
     return <Loading />

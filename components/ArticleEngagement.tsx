@@ -4,9 +4,22 @@ import { IoHeartOutline } from '@react-icons/all-files/io5/IoHeartOutline'
 import cs from 'classnames'
 import * as React from 'react'
 
+import {
+  engagementClientKey,
+  normalizeEngagementPageId
+} from '@/lib/engagement'
+
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`
   return String(n)
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init)
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+  return res.json() as Promise<T>
 }
 
 /**
@@ -20,48 +33,68 @@ export function ArticleEngagement({ pageId }: { pageId: string }) {
   const [views, setViews] = React.useState<number | null>(null)
   const [bump, setBump] = React.useState(false)
 
+  const normalizedId = React.useMemo(
+    () => normalizeEngagementPageId(pageId),
+    [pageId]
+  )
+
   React.useEffect(() => {
-    if (!pageId) return
-    const likedKey = `liked:${pageId}`
-    const viewedKey = `viewed:${pageId}`
+    if (!normalizedId) return
+
+    let cancelled = false
+    const likedKey = engagementClientKey('liked', normalizedId)
+    const viewedKey = engagementClientKey('viewed', normalizedId)
+
     setLiked(localStorage.getItem(likedKey) === '1')
 
     async function loadLikes() {
       try {
-        const res = await fetch(`/api/likes?id=${encodeURIComponent(pageId)}`)
-        const data = (await res.json()) as { likes?: number }
-        setLikes(data.likes ?? 0)
+        const data = await fetchJson<{ likes?: number }>(
+          `/api/likes?id=${encodeURIComponent(normalizedId)}`
+        )
+        if (!cancelled) setLikes(data.likes ?? 0)
       } catch {
-        setLikes(0)
+        if (!cancelled) setLikes(0)
       }
     }
 
     async function trackView() {
+      const alreadyViewed = sessionStorage.getItem(viewedKey) === '1'
+
       try {
-        const alreadyViewed =
-          sessionStorage.getItem(viewedKey) === '1'
-        const res = await fetch('/api/views', {
-          method: alreadyViewed ? 'GET' : 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: alreadyViewed ? undefined : JSON.stringify({ id: pageId })
-        }).then((r) =>
-          alreadyViewed
-            ? fetch(`/api/views?id=${encodeURIComponent(pageId)}`)
-            : r
-        )
-        const data = (await res.json()) as { views?: number }
-        setViews(data.views ?? 0)
+        if (alreadyViewed) {
+          const data = await fetchJson<{ views?: number }>(
+            `/api/views?id=${encodeURIComponent(normalizedId)}`
+          )
+          if (!cancelled) setViews(data.views ?? 0)
+          return
+        }
+
+        // Mark before POST so React Strict Mode / fast remounts don't double-count.
         sessionStorage.setItem(viewedKey, '1')
+
+        const data = await fetchJson<{ views?: number }>('/api/views', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: normalizedId })
+        })
+        if (!cancelled) setViews(data.views ?? 0)
       } catch {
-        setViews(0)
+        sessionStorage.removeItem(viewedKey)
+        if (!cancelled) setViews(0)
       }
     }
 
     void loadLikes()
     void trackView()
-  }, [pageId])
+
+    return () => {
+      cancelled = true
+    }
+  }, [normalizedId])
 
   const onToggleLike = React.useCallback(async () => {
+    const likedKey = engagementClientKey('liked', normalizedId)
     const next = !liked
     setLiked(next)
     setLikes((prev) => Math.max(0, (prev ?? 0) + (next ? 1 : -1)))
@@ -69,19 +102,19 @@ export function ArticleEngagement({ pageId }: { pageId: string }) {
       setBump(true)
       window.setTimeout(() => setBump(false), 320)
     }
+
     try {
-      localStorage.setItem(`liked:${pageId}`, next ? '1' : '0')
-      const res = await fetch('/api/likes', {
+      localStorage.setItem(likedKey, next ? '1' : '0')
+      const data = await fetchJson<{ likes?: number }>('/api/likes', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: pageId, liked: next })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: normalizedId, liked: next })
       })
-      const data = (await res.json()) as { likes?: number }
       if (typeof data.likes === 'number') setLikes(data.likes)
     } catch {
       /* keep optimistic value */
     }
-  }, [liked, pageId])
+  }, [liked, normalizedId])
 
   return (
     <div className='zn-engage'>

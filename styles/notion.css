@@ -522,6 +522,22 @@ html {
 /* Table of contents — clip long headings instead of stretching the aside    */
 /* -------------------------------------------------------------------------- */
 
+.notion-aside-table-of-contents-header {
+  font-size: 0;
+  line-height: 0;
+}
+
+.notion-aside-table-of-contents-header::before {
+  content: 'Съдържание';
+  display: block;
+  font-size: 1.1em;
+  font-weight: 400;
+  line-height: normal;
+  text-transform: uppercase;
+  word-break: break-word;
+  color: var(--fg-color);
+}
+
 .notion-table-of-contents-item {
   min-width: 0;
 }

@@ -12,6 +12,7 @@ import {
 
 import * as libConfig from '@/lib/config'
 import interSemiBoldFont from '@/lib/fonts/inter-semibold'
+import { getPageAuthorName } from '@/lib/get-page-meta'
 import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import { mapImageUrl } from '@/lib/map-image-url'
 import { notion } from '@/lib/notion-api'
@@ -233,7 +234,7 @@ export async function getNotionPageInfo({
   ])
 
   const author =
-    getPageProperty<string>('Author', block, recordMap) || libConfig.author
+    getPageAuthorName(block, recordMap) || libConfig.author
 
   // const socialDescription =
   //   getPageProperty<string>('Description', block, recordMap) ||
