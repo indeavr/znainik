@@ -40,21 +40,21 @@ export async function revalidatePaths(
       })
     )
 
-    chunk.forEach((path, j) => {
+    for (const [j, path] of chunk.entries()) {
       const s = settled[j]
       if (!s) {
         results.push({ path, ok: false, error: 'No result' })
-        return
+        continue
       }
       if (s.status === 'fulfilled') {
         results.push({ path, ok: true })
-        return
+        continue
       }
       const message =
         s.reason instanceof Error ? s.reason.message : String(s.reason)
       console.error('revalidate path', path, message)
       results.push({ path, ok: false, error: message })
-    })
+    }
   }
 
   return results
