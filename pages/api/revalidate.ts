@@ -2,20 +2,32 @@ import { timingSafeEqual } from 'node:crypto'
 
 import { type NextApiRequest, type NextApiResponse } from 'next'
 
-import { pageUrlOverrides } from '@/lib/config'
-import { getSiteMap } from '@/lib/get-site-map'
+import {
+  collectArticlePaths,
+  collectShellPaths,
+  collectTagPaths,
+  parseExtraPaths,
+  revalidatePaths
+} from '@/lib/revalidate-paths'
 
 /**
  * On-demand revalidation for Notion content.
- * Call this after editing a page in Notion so production serves the latest content
- * without redeploying.
  *
  * Usage:
- *   POST/GET /api/revalidate?secret=YOUR_SECRET&path=/oracle
- *   POST/GET /api/revalidate?secret=YOUR_SECRET&path=all   (revalidate home + all known paths)
+ *   GET /api/revalidate?secret=SECRET&path=all
+ *     → home, tags, prikazki (+ tale pages). Fast; no full sitemap crawl.
+ *     Optional: &extra=/my-article,/other-slug
  *
- * Set REVALIDATE_SECRET in Vercel env (e.g. a long random string).
- * Optionally call from a Notion webhook or cron.
+ *   GET /api/revalidate?secret=SECRET&path=/my-article
+ *     → one article page. Use after editing a single post.
+ *
+ *   GET /api/revalidate?secret=SECRET&path=pages&offset=0&limit=8
+ *     → batch-revalidate article pages (repeat with next offset until hasMore=false).
+ *
+ *   GET /api/revalidate?secret=SECRET&path=tags
+ *     → all /tags/[tag] listing pages.
+ *
+ * Set REVALIDATE_SECRET in Vercel env.
  */
 export default async function revalidate(
   req: NextApiRequest,
@@ -35,6 +47,10 @@ export default async function revalidate(
     typeof req.query.path === 'string'
       ? req.query.path
       : (req.body?.path as string)
+  const extraParam =
+    typeof req.query.extra === 'string'
+      ? req.query.extra
+      : (req.body?.extra as string)
 
   if (!process.env.REVALIDATE_SECRET) {
     console.warn('REVALIDATE_SECRET is not set; revalidate API is disabled')
@@ -56,62 +72,76 @@ export default async function revalidate(
     return res.status(401).json({ error: 'Invalid secret' })
   }
 
-  const pathsToRevalidate: string[] = []
+  const mode = pathParam === 'all' || !pathParam || pathParam === '' ? 'all' : pathParam
 
-  if (pathParam === 'all' || !pathParam || pathParam === '') {
-    pathsToRevalidate.push('/')
-    // Static routes that fetch Notion (e.g. pages/oracle/index.tsx)
-    pathsToRevalidate.push('/oracle')
-    try {
-      const siteMap = await getSiteMap()
-      const canonicalPaths = Object.keys(siteMap.canonicalPageMap).map(
-        (slug) => `/${slug}`
-      )
-      const overridePaths = Object.keys(pageUrlOverrides).map(
-        (slug) => `/${slug}`
-      )
-      pathsToRevalidate.push(
-        ...canonicalPaths,
-        ...overridePaths.filter((p) => !pathsToRevalidate.includes(p))
-      )
-    } catch (err) {
-      console.error('revalidate getSiteMap', err)
-      return res.status(500).json({
-        error: 'Failed to get paths for revalidate all',
-        message: err instanceof Error ? err.message : String(err)
+  try {
+    if (mode === 'all') {
+      const paths = [
+        ...(await collectShellPaths()),
+        ...parseExtraPaths(extraParam)
+      ]
+      const results = await revalidatePaths(res, paths, 3)
+      const allOk = results.every((r) => r.ok)
+      return res.status(allOk ? 200 : 207).json({
+        revalidated: allOk,
+        mode: 'all',
+        results,
+        hint:
+          'For a single updated article also call path=/article-slug. To refresh all articles in batches use path=pages&offset=0&limit=8.'
       })
     }
-  } else {
-    const path = pathParam.startsWith('/') ? pathParam : `/${pathParam}`
-    pathsToRevalidate.push(path)
-  }
 
-  // Run revalidations in parallel so "path=all" finishes within function timeout
-  const settled = await Promise.allSettled(
-    pathsToRevalidate.map(async (path) => {
-      await res.revalidate(path)
-      return path
+    if (mode === 'pages') {
+      const offset = Math.max(0, Number(req.query.offset) || 0)
+      const limit = Math.min(Math.max(1, Number(req.query.limit) || 8), 15)
+      const allPaths = await collectArticlePaths()
+      const batch = allPaths.slice(offset, offset + limit)
+      const results = await revalidatePaths(res, batch, 2)
+      const nextOffset = offset + batch.length
+      const allOk = results.every((r) => r.ok)
+      return res.status(allOk ? 200 : 207).json({
+        revalidated: allOk,
+        mode: 'pages',
+        results,
+        pagination: {
+          offset,
+          limit,
+          total: allPaths.length,
+          nextOffset,
+          hasMore: nextOffset < allPaths.length
+        }
+      })
+    }
+
+    if (mode === 'tags') {
+      const paths = ['/tags', ...(await collectTagPaths())]
+      const results = await revalidatePaths(res, paths, 3)
+      const allOk = results.every((r) => r.ok)
+      return res.status(allOk ? 200 : 207).json({
+        revalidated: allOk,
+        mode: 'tags',
+        results
+      })
+    }
+
+    const path = mode.startsWith('/') ? mode : `/${mode}`
+    const results = await revalidatePaths(res, [path], 1)
+    const allOk = results.every((r) => r.ok)
+    return res.status(allOk ? 200 : 207).json({
+      revalidated: allOk,
+      mode: 'single',
+      results
     })
-  )
-
-  const results = pathsToRevalidate.map((path, i) => {
-    const s = settled[i]
-    if (!s) return { path, ok: false, error: 'No result' }
-    if (s.status === 'fulfilled') return { path, ok: true }
-    const message =
-      s.reason instanceof Error ? s.reason.message : String(s.reason)
-    console.error('revalidate path', path, message)
-    return { path, ok: false, error: message }
-  })
-
-  const allOk = results.every((r) => r.ok)
-  return res.status(allOk ? 200 : 207).json({
-    revalidated: allOk,
-    results
-  })
+  } catch (err) {
+    console.error('revalidate error', mode, err)
+    return res.status(500).json({
+      error: 'Revalidation failed',
+      mode,
+      message: err instanceof Error ? err.message : String(err)
+    })
+  }
 }
 
-/** Allow longer timeout for "path=all" (many paths). Vercel default is 10s; Pro allows up to 300. */
 export const config = {
   maxDuration: 60,
   api: {
