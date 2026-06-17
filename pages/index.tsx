@@ -42,9 +42,6 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
 
 export default function HomePage({ articles, tags }: HomeProps) {
   const featured = articles.filter((a) => a.featured).slice(0, 3)
-  const rest = featured.length
-    ? articles.filter((a) => !featured.includes(a))
-    : articles
 
   const websiteJsonLd = {
     '@context': 'https://schema.org',
@@ -159,9 +156,9 @@ export default function HomePage({ articles, tags }: HomeProps) {
             </h2>
           </div>
 
-          {rest.length > 0 ? (
+          {articles.length > 0 ? (
             <div className='zn-grid'>
-              {rest.map((article) => (
+              {articles.map((article) => (
                 <ArticleCard key={article.pageId} article={article} />
               ))}
             </div>

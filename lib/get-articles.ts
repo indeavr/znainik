@@ -35,7 +35,7 @@ const TAG_PROPS = [
   'Type'
 ]
 const FEATURED_PROPS = ['Featured', 'Препоръчано', 'Избрано', 'Pinned']
-const ORDER_PROPS = ['Order', 'Ред', '#', 'Rank', 'Приоритет', 'Priority']
+const ORDER_PROPS = ['Priority', 'Order', 'Ред', 'Приоритет', 'Rank', '#']
 
 function firstStringProperty(
   names: string[],
@@ -65,16 +65,25 @@ function firstDateProperty(
   return null
 }
 
+function parseNumericProperty(value: unknown): number | null {
+  if (value == null || value === '') return null
+  if (typeof value === 'number' && !Number.isNaN(value)) return value
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim())
+    if (!Number.isNaN(parsed)) return parsed
+  }
+  return null
+}
+
 function firstNumberProperty(
   names: string[],
   block: Block,
   recordMap: ExtendedRecordMap
 ): number | null {
   for (const name of names) {
-    const value = getPageProperty<number>(name, block, recordMap)
-    if (typeof value === 'number' && !Number.isNaN(value)) {
-      return value
-    }
+    const value = getPageProperty<string | number>(name, block, recordMap)
+    const parsed = parseNumericProperty(value)
+    if (parsed != null) return parsed
   }
   return null
 }
@@ -95,6 +104,15 @@ function parseTags(
     }
   }
   return []
+}
+
+function isFeatured(block: Block, recordMap: ExtendedRecordMap): boolean {
+  for (const name of FEATURED_PROPS) {
+    const value = getPageProperty<boolean | string>(name, block, recordMap)
+    if (value === true) return true
+    if (typeof value === 'string' && value.toLowerCase() === 'yes') return true
+  }
+  return false
 }
 
 /** Higher `order` first; missing order falls back to newest `date`. */
@@ -168,10 +186,7 @@ export function getArticlesFromRecordMap(
       date: firstDateProperty(DATE_PROPS, block, recordMap),
       order: firstNumberProperty(ORDER_PROPS, block, recordMap),
       tags: parseTags(block, recordMap),
-      featured:
-        firstStringProperty(FEATURED_PROPS, block, recordMap).toLowerCase() ===
-          'yes' ||
-        getPageProperty<boolean>(FEATURED_PROPS[0]!, block, recordMap) === true
+      featured: isFeatured(block, recordMap)
     })
   }
 
