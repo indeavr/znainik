@@ -35,6 +35,7 @@ import { searchNotion } from '@/lib/search-notion'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
 import { AuthorCard } from './AuthorCard'
+import { CommentSection } from './comments/CommentSection'
 import { Footer } from './Footer'
 import { Loading } from './Loading'
 import { Newsletter } from './Newsletter'
@@ -314,6 +315,7 @@ export function NotionPage({
 
         <hr className='zn-divider' />
         <ShareButtons title={articleTitle || ''} />
+        {pageId && <CommentSection pageId={pageId} />}
         <AuthorCard author={author} />
         {pageId && <RelatedPosts pageId={pageId} />}
         <Newsletter />

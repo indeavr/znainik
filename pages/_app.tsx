@@ -8,6 +8,7 @@ import 'styles/notion.css' // global style overrides for notion
 import 'styles/prism-theme.css' // global style overrides for prism theme (optional)
 import 'styles/site.css' // marketing / knowledge-base UI (home, tags, palette, etc.)
 import 'styles/story.css' // interactive story-game experience (приказки)
+import 'styles/comments.css' // community comments + auth
 
 import type { AppProps } from 'next/app'
 import { IconContext } from '@react-icons/all-files'

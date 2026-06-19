@@ -34,6 +34,7 @@
     "@keyvhq/core": "^1.6.9",
     "@keyvhq/redis": "^1.6.10",
     "@notionhq/client": "^3.0.1",
+    "@neondatabase/auth": "^0.4.2-beta",
     "@react-icons/all-files": "^4.1.0",
     "@vercel/analytics": "^1.5.0",
     "@vercel/postgres": "^0.10.0",
@@ -82,6 +83,17 @@
   "overrides": {
     "cacheable-request": {
       "keyv": "npm:@keyvhq/core@~1.6.6"
+    }
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "next": "15",
+        "react": "19"
+      },
+      "ignoreMissing": [
+        "@remix-run/react"
+      ]
     }
   },
   "prettier": "@fisch0920/config/prettier",
