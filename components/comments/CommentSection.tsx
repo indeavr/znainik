@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { authClient } from '@/lib/auth-client'
-import { type Comment , COMMENT_MAX_LENGTH } from '@/lib/comments'
+import { type Comment, COMMENT_MAX_LENGTH } from '@/lib/comments'
 import { normalizeEngagementPageId } from '@/lib/engagement'
 
 import { AuthPanel } from './AuthPanel'
@@ -16,6 +16,15 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return data
 }
 
+function userInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
 export function CommentSection({ pageId }: { pageId: string }) {
   const normalizedId = React.useMemo(
     () => normalizeEngagementPageId(pageId),
@@ -25,10 +34,13 @@ export function CommentSection({ pageId }: { pageId: string }) {
 
   const [comments, setComments] = React.useState<Comment[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [unavailable, setUnavailable] = React.useState(false)
+  const [composeOpen, setComposeOpen] = React.useState(false)
   const [draft, setDraft] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
   const [formError, setFormError] = React.useState<string | null>(null)
+
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+  const panelRef = React.useRef<HTMLDivElement>(null)
 
   const loadComments = React.useCallback(async () => {
     if (!normalizedId) return
@@ -38,9 +50,8 @@ export function CommentSection({ pageId }: { pageId: string }) {
         `/api/comments?pageId=${encodeURIComponent(normalizedId)}`
       )
       setComments(data.comments ?? [])
-      setUnavailable(false)
-    } catch {
-      setUnavailable(true)
+    } catch (err: unknown) {
+      console.error('[znainik/comments] failed to load comments', err)
       setComments([])
     } finally {
       setLoading(false)
@@ -50,6 +61,27 @@ export function CommentSection({ pageId }: { pageId: string }) {
   React.useEffect(() => {
     void loadComments()
   }, [loadComments])
+
+  React.useEffect(() => {
+    if (composeOpen && session?.user && textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [composeOpen, session?.user])
+
+  React.useEffect(() => {
+    if (!composeOpen) return
+
+    function onPointerDown(e: PointerEvent) {
+      const panel = panelRef.current
+      if (panel && !panel.contains(e.target as Node)) {
+        setComposeOpen(false)
+        setFormError(null)
+      }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [composeOpen])
 
   async function onSubmitComment(e: React.FormEvent) {
     e.preventDefault()
@@ -65,6 +97,7 @@ export function CommentSection({ pageId }: { pageId: string }) {
       })
       setComments((prev) => [...prev, data.comment])
       setDraft('')
+      setComposeOpen(false)
     } catch (err: unknown) {
       setFormError(
         err instanceof Error ? err.message : 'Неуспешно изпращане'
@@ -87,9 +120,27 @@ export function CommentSection({ pageId }: { pageId: string }) {
 
   async function onSignOut() {
     await authClient.signOut()
+    setComposeOpen(false)
+    setDraft('')
+  }
+
+  function openCompose() {
+    setFormError(null)
+    setComposeOpen(true)
+  }
+
+  function closeCompose() {
+    setComposeOpen(false)
+    setFormError(null)
+  }
+
+  function onAuthSuccess() {
+    void loadComments()
+    setComposeOpen(true)
   }
 
   const user = session?.user
+  const displayName = user?.name || user?.email?.split('@')[0] || 'Читател'
   const remaining = COMMENT_MAX_LENGTH - draft.length
 
   return (
@@ -104,71 +155,105 @@ export function CommentSection({ pageId }: { pageId: string }) {
         )}
       </header>
 
-      {unavailable ? (
-        <p className='zn-comments-unavailable'>
-          Коментарите изискват Vercel Postgres и Neon Auth. Свържете базата,
-          активирайте Auth в Neon Console и задайте{' '}
-          <code>NEON_AUTH_BASE_URL</code>.
-        </p>
-      ) : (
-        <>
-          {isPending ? (
-            <p className='zn-comments-loading'>Зареждане...</p>
-          ) : user ? (
-            <div className='zn-comments-compose-wrap'>
-              <div className='zn-comments-user'>
-                <span>
-                  Здравей, <strong>{user.name || user.email}</strong>
-                </span>
-                <button
-                  type='button'
-                  className='zn-comments-signout'
-                  onClick={onSignOut}
-                >
-                  Изход
-                </button>
-              </div>
-              <form className='zn-comments-compose' onSubmit={onSubmitComment}>
-                <label className='zn-comments-field zn-comments-field-grow'>
-                  <span className='sr-only'>Вашият коментар</span>
-                  <textarea
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder='Споделете мисъл, въпрос или благодарност...'
-                    rows={4}
-                    maxLength={COMMENT_MAX_LENGTH}
-                    required
-                  />
-                </label>
-                <div className='zn-comments-compose-actions'>
-                  <span className='zn-comments-remaining'>{remaining}</span>
-                  {formError && (
-                    <span className='zn-comments-error'>{formError}</span>
+      {!isPending && (
+        <div className='zn-comments-compose-area' ref={panelRef}>
+          <button
+            type='button'
+            className={`zn-comments-trigger${composeOpen ? ' is-open' : ''}`}
+            onClick={openCompose}
+            aria-expanded={composeOpen}
+            aria-controls='zn-comments-panel'
+          >
+            {user ? (
+              <>
+                <span className='zn-comments-trigger-avatar' aria-hidden='true'>
+                  {user.image ? (
+                    <img src={user.image} alt='' />
+                  ) : (
+                    userInitials(displayName)
                   )}
-                  <button
-                    type='submit'
-                    className='zn-comments-submit'
-                    disabled={submitting || !draft.trim()}
-                  >
-                    {submitting ? 'Изпращане...' : 'Публикувай'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          ) : (
-            <AuthPanel onSuccess={loadComments} />
-          )}
+                </span>
+                <span className='zn-comments-trigger-text'>
+                  Споделете мисъл, въпрос или благодарност...
+                </span>
+              </>
+            ) : (
+              <span className='zn-comments-trigger-text'>
+                Оставете коментар...
+              </span>
+            )}
+          </button>
 
-          {loading ? (
-            <p className='zn-comments-loading'>Зареждане на коментари...</p>
-          ) : (
-            <CommentList
-              comments={comments}
-              currentUserId={user?.id}
-              onDelete={onDelete}
-            />
+          {composeOpen && (
+            <div className='zn-comments-panel' id='zn-comments-panel'>
+              {user ? (
+                <form
+                  className='zn-comments-compose'
+                  onSubmit={onSubmitComment}
+                >
+                  <div className='zn-comments-panel-head'>
+                    <span className='zn-comments-panel-user'>
+                      Като <strong>{displayName}</strong>
+                    </span>
+                    <button
+                      type='button'
+                      className='zn-comments-signout'
+                      onClick={onSignOut}
+                    >
+                      Изход
+                    </button>
+                  </div>
+
+                  <label className='zn-comments-field zn-comments-field-grow'>
+                    <span className='sr-only'>Вашият коментар</span>
+                    <textarea
+                      ref={textareaRef}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      placeholder='Вашият коментар...'
+                      rows={4}
+                      maxLength={COMMENT_MAX_LENGTH}
+                      required
+                    />
+                  </label>
+
+                  <div className='zn-comments-compose-actions'>
+                    <span className='zn-comments-remaining'>{remaining}</span>
+                    {formError && (
+                      <span className='zn-comments-error'>{formError}</span>
+                    )}
+                    <button
+                      type='button'
+                      className='zn-comments-cancel'
+                      onClick={closeCompose}
+                    >
+                      Отказ
+                    </button>
+                    <button
+                      type='submit'
+                      className='zn-comments-submit'
+                      disabled={submitting || !draft.trim()}
+                    >
+                      {submitting ? 'Изпращане...' : 'Публикувай'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <AuthPanel onSuccess={onAuthSuccess} onCancel={closeCompose} />
+              )}
+            </div>
           )}
-        </>
+        </div>
+      )}
+
+      {isPending || loading ? (
+        <p className='zn-comments-loading'>Зареждане на коментари...</p>
+      ) : (
+        <CommentList
+          comments={comments}
+          currentUserId={user?.id}
+          onDelete={onDelete}
+        />
       )}
     </section>
   )

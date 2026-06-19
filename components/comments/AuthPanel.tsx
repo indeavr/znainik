@@ -4,7 +4,13 @@ import { authClient } from '@/lib/auth-client'
 
 type AuthMode = 'sign-in' | 'sign-up'
 
-export function AuthPanel({ onSuccess }: { onSuccess?: () => void }) {
+export function AuthPanel({
+  onSuccess,
+  onCancel
+}: {
+  onSuccess?: () => void
+  onCancel?: () => void
+}) {
   const [mode, setMode] = React.useState<AuthMode>('sign-in')
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
@@ -45,9 +51,20 @@ export function AuthPanel({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <div className='zn-comments-auth'>
-      <p className='zn-comments-auth-lead'>
-        Влезте, за да се присъедините към разговора на общността.
-      </p>
+      <div className='zn-comments-panel-head'>
+        <p className='zn-comments-auth-lead'>
+          Влезте, за да се присъедините към разговора.
+        </p>
+        {onCancel && (
+          <button
+            type='button'
+            className='zn-comments-cancel'
+            onClick={onCancel}
+          >
+            Отказ
+          </button>
+        )}
+      </div>
 
       <div className='zn-comments-auth-tabs' role='tablist'>
         <button

@@ -12,19 +12,14 @@ export const dynamic = 'force-dynamic'
 
 const noStore = { 'Cache-Control': 'no-store' }
 
-function unavailable() {
-  return Response.json(
-    {
-      error: 'comments unavailable',
-      hint: 'Connect Vercel Postgres (POSTGRES_URL) and enable Neon Auth.'
-    },
-    { status: 503, headers: noStore }
-  )
-}
-
 /** GET /api/comments?pageId=... — public list */
 export async function GET(req: Request) {
-  if (!isEngagementPersisted) return unavailable()
+  if (!isEngagementPersisted) {
+    console.error(
+      '[znainik/comments] POSTGRES_URL not set — comments disabled locally'
+    )
+    return Response.json({ comments: [] }, { headers: noStore })
+  }
 
   const pageId = normalizeEngagementPageId(
     new URL(req.url).searchParams.get('pageId') ?? ''
@@ -47,8 +42,12 @@ export async function GET(req: Request) {
 
 /** POST /api/comments { pageId, body } — logged-in only */
 export async function POST(req: Request) {
-  if (!isEngagementPersisted) return unavailable()
-  if (!isAuthConfigured) return unavailable()
+  if (!isEngagementPersisted || !isAuthConfigured) {
+    console.error(
+      '[znainik/comments] POST blocked — set POSTGRES_URL, NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET'
+    )
+    return Response.json({ error: 'unavailable' }, { status: 503 })
+  }
 
   const { data: session } = await auth.getSession()
   if (!session?.user) {
@@ -91,8 +90,12 @@ export async function POST(req: Request) {
 
 /** DELETE /api/comments?id=... — own comment only */
 export async function DELETE(req: Request) {
-  if (!isEngagementPersisted) return unavailable()
-  if (!isAuthConfigured) return unavailable()
+  if (!isEngagementPersisted || !isAuthConfigured) {
+    console.error(
+      '[znainik/comments] DELETE blocked — set POSTGRES_URL, NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET'
+    )
+    return Response.json({ error: 'unavailable' }, { status: 503 })
+  }
 
   const { data: session } = await auth.getSession()
   if (!session?.user) {
