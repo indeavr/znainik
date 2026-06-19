@@ -15,7 +15,8 @@ import { domain, rootNotionPageId, site } from '@/lib/config'
 import {
   type Article,
   getArticlesFromRecordMap,
-  getTagCounts
+  getTagCounts,
+  sortFeaturedArticles
 } from '@/lib/get-articles'
 import { resolveNotionPage } from '@/lib/resolve-notion-page'
 
@@ -41,7 +42,10 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
 }
 
 export default function HomePage({ articles, tags }: HomeProps) {
-  const featured = articles.filter((a) => a.featured).slice(0, 3)
+  const featured = sortFeaturedArticles(articles.filter((a) => a.featured)).slice(
+    0,
+    3
+  )
 
   const websiteJsonLd = {
     '@context': 'https://schema.org',

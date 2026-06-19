@@ -36,6 +36,7 @@
     "@notionhq/client": "^3.0.1",
     "@react-icons/all-files": "^4.1.0",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/postgres": "^0.10.0",
     "@vercel/speed-insights": "^1.2.0",
     "chart.js": "^4.5.0",
     "classnames": "^2.5.1",

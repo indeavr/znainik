@@ -1273,6 +1273,18 @@
   color: var(--brand-2);
 }
 
+.zn-engage-btn.is-maxed,
+.zn-engage-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.zn-engage-btn.is-maxed:hover,
+.zn-engage-btn:disabled:hover {
+  color: var(--brand-2);
+  background: transparent;
+}
+
 .zn-engage-btn.is-bump {
   animation: zn-heart-bump 320ms ease;
 }

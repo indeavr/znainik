@@ -115,18 +115,27 @@ function isFeatured(block: Block, recordMap: ExtendedRecordMap): boolean {
   return false
 }
 
-/** Higher `order` first; missing order falls back to newest `date`. */
-export function compareArticles(a: Article, b: Article): number {
+/** Newest first (default list order). */
+export function compareArticlesByDate(a: Article, b: Article): number {
+  return (b.date ?? 0) - (a.date ?? 0)
+}
+
+export function sortArticlesByDate(articles: Article[]): Article[] {
+  return articles.toSorted(compareArticlesByDate)
+}
+
+/** Featured block only: higher `order` first, then date. */
+export function compareFeaturedArticles(a: Article, b: Article): number {
   const ao = a.order
   const bo = b.order
   if (ao != null && bo != null && ao !== bo) return bo - ao
   if (ao != null && bo == null) return -1
   if (ao == null && bo != null) return 1
-  return (b.date ?? 0) - (a.date ?? 0)
+  return compareArticlesByDate(a, b)
 }
 
-export function sortArticles(articles: Article[]): Article[] {
-  return articles.toSorted(compareArticles)
+export function sortFeaturedArticles(articles: Article[]): Article[] {
+  return articles.toSorted(compareFeaturedArticles)
 }
 
 /**
@@ -190,7 +199,7 @@ export function getArticlesFromRecordMap(
     })
   }
 
-  return sortArticles(articles)
+  return sortArticlesByDate(articles)
 }
 
 /** Aggregates tag → count across a list of articles, sorted by frequency. */

@@ -4,10 +4,9 @@ import { IoHeartOutline } from '@react-icons/all-files/io5/IoHeartOutline'
 import cs from 'classnames'
 import * as React from 'react'
 
-import {
-  engagementClientKey,
-  normalizeEngagementPageId
-} from '@/lib/engagement'
+import { normalizeEngagementPageId } from '@/lib/engagement'
+import { MAX_LIKES_PER_VISITOR } from '@/lib/engagement-constants'
+import { getOrCreateVisitorId } from '@/lib/engagement-visitor'
 
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`
@@ -22,111 +21,131 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+type LikeResponse = {
+  likes?: number
+  userLikes?: number
+  maxLikes?: number
+  added?: boolean
+  persisted?: boolean
+}
+type ViewResponse = { views?: number; persisted?: boolean }
+
 /**
- * Medium-style engagement rail: a like (heart) toggle and a view counter.
- * Likes are capped to one per device via localStorage; a view is recorded once
- * per browser session. Both persist server-side via /api/likes and /api/views.
+ * Engagement rail: claps (up to 13 per visitor, no unlike) + views.
  */
 export function ArticleEngagement({ pageId }: { pageId: string }) {
   const [likes, setLikes] = React.useState<number | null>(null)
-  const [liked, setLiked] = React.useState(false)
+  const [userLikes, setUserLikes] = React.useState(0)
   const [views, setViews] = React.useState<number | null>(null)
   const [bump, setBump] = React.useState(false)
+  const [storageWarning, setStorageWarning] = React.useState(false)
 
   const normalizedId = React.useMemo(
     () => normalizeEngagementPageId(pageId),
     [pageId]
   )
 
+  const atMax = userLikes >= MAX_LIKES_PER_VISITOR
+
   React.useEffect(() => {
     if (!normalizedId) return
 
     let cancelled = false
-    const likedKey = engagementClientKey('liked', normalizedId)
-    const viewedKey = engagementClientKey('viewed', normalizedId)
+    const visitor = getOrCreateVisitorId()
+    if (!visitor) return
 
-    setLiked(localStorage.getItem(likedKey) === '1')
-
-    async function loadLikes() {
+    async function loadEngagement() {
       try {
-        const data = await fetchJson<{ likes?: number }>(
-          `/api/likes?id=${encodeURIComponent(normalizedId)}`
-        )
-        if (!cancelled) setLikes(data.likes ?? 0)
-      } catch {
-        if (!cancelled) setLikes(0)
-      }
-    }
+        const [likeData, viewData] = await Promise.all([
+          fetchJson<LikeResponse>(
+            `/api/likes?id=${encodeURIComponent(normalizedId)}&visitor=${encodeURIComponent(visitor)}`
+          ),
+          fetchJson<ViewResponse>('/api/views', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: normalizedId, visitor })
+          })
+        ])
 
-    async function trackView() {
-      const alreadyViewed = sessionStorage.getItem(viewedKey) === '1'
-
-      try {
-        if (alreadyViewed) {
-          const data = await fetchJson<{ views?: number }>(
-            `/api/views?id=${encodeURIComponent(normalizedId)}`
-          )
-          if (!cancelled) setViews(data.views ?? 0)
-          return
+        if (cancelled) return
+        setLikes(likeData.likes ?? 0)
+        setUserLikes(likeData.userLikes ?? 0)
+        setViews(viewData.views ?? 0)
+        if (likeData.persisted === false || viewData.persisted === false) {
+          setStorageWarning(true)
         }
-
-        // Mark before POST so React Strict Mode / fast remounts don't double-count.
-        sessionStorage.setItem(viewedKey, '1')
-
-        const data = await fetchJson<{ views?: number }>('/api/views', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: normalizedId })
-        })
-        if (!cancelled) setViews(data.views ?? 0)
       } catch {
-        sessionStorage.removeItem(viewedKey)
-        if (!cancelled) setViews(0)
+        if (!cancelled) {
+          setLikes(0)
+          setViews(0)
+        }
       }
     }
 
-    void loadLikes()
-    void trackView()
+    void loadEngagement()
 
     return () => {
       cancelled = true
     }
   }, [normalizedId])
 
-  const onToggleLike = React.useCallback(async () => {
-    const likedKey = engagementClientKey('liked', normalizedId)
-    const next = !liked
-    setLiked(next)
-    setLikes((prev) => Math.max(0, (prev ?? 0) + (next ? 1 : -1)))
-    if (next) {
-      setBump(true)
-      window.setTimeout(() => setBump(false), 320)
-    }
+  const onAddLike = React.useCallback(async () => {
+    if (atMax) return
+
+    const visitor = getOrCreateVisitorId()
+    if (!visitor) return
+
+    setUserLikes((prev) => prev + 1)
+    setLikes((prev) => (prev ?? 0) + 1)
+    setBump(true)
+    window.setTimeout(() => setBump(false), 320)
 
     try {
-      localStorage.setItem(likedKey, next ? '1' : '0')
-      const data = await fetchJson<{ likes?: number }>('/api/likes', {
+      const data = await fetchJson<LikeResponse>('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: normalizedId, liked: next })
+        body: JSON.stringify({ id: normalizedId, visitor })
       })
       if (typeof data.likes === 'number') setLikes(data.likes)
+      if (typeof data.userLikes === 'number') setUserLikes(data.userLikes)
+      if (data.added === false) {
+        setUserLikes(data.userLikes ?? MAX_LIKES_PER_VISITOR)
+        setLikes(data.likes ?? 0)
+      }
     } catch {
-      /* keep optimistic value */
+      setUserLikes((prev) => Math.max(0, prev - 1))
+      setLikes((prev) => Math.max(0, (prev ?? 1) - 1))
     }
-  }, [liked, normalizedId])
+  }, [atMax, normalizedId])
+
+  const hasClapped = userLikes > 0
 
   return (
     <div className='zn-engage'>
       <button
         type='button'
-        className={cs('zn-engage-btn', liked && 'is-liked', bump && 'is-bump')}
-        onClick={onToggleLike}
-        aria-pressed={liked}
-        aria-label={liked ? 'Премахни харесване' : 'Хареса ми'}
-        title='Хареса ми'
+        className={cs(
+          'zn-engage-btn',
+          hasClapped && 'is-liked',
+          bump && 'is-bump',
+          atMax && 'is-maxed'
+        )}
+        onClick={onAddLike}
+        disabled={atMax}
+        aria-label={
+          atMax
+            ? `Дадохте ${MAX_LIKES_PER_VISITOR} харесвания`
+            : hasClapped
+              ? `Харесай отново (${userLikes}/${MAX_LIKES_PER_VISITOR})`
+              : 'Хареса ми'
+        }
+        title={
+          atMax
+            ? `Максимум ${MAX_LIKES_PER_VISITOR} харесвания`
+            : `Харесай (${userLikes}/${MAX_LIKES_PER_VISITOR})`
+        }
       >
-        {liked ? <IoHeart /> : <IoHeartOutline />}
+        {hasClapped ? <IoHeart /> : <IoHeartOutline />}
       </button>
       <span className='zn-engage-count'>
         {likes === null ? '·' : formatCount(likes)}
@@ -134,7 +153,14 @@ export function ArticleEngagement({ pageId }: { pageId: string }) {
 
       <span className='zn-engage-divider' aria-hidden='true' />
 
-      <span className='zn-engage-views' title='Прочитания'>
+      <span
+        className='zn-engage-views'
+        title={
+          storageWarning
+            ? 'Свържи Vercel Postgres (Neon) за постоянни броячи в production'
+            : 'Прочитания'
+        }
+      >
         <IoEyeOutline />
         <span className='zn-engage-count'>
           {views === null ? '·' : formatCount(views)}

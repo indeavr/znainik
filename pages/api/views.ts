@@ -1,18 +1,18 @@
 import { type NextApiRequest, type NextApiResponse } from 'next'
 
 import { normalizeEngagementPageId } from '@/lib/engagement'
+import { isEngagementPersisted } from '@/lib/engagement-db'
 import {
-  getEngagementCount,
-  incrementViewCount
+  getViewCount,
+  recordView
 } from '@/lib/engagement-store'
+import { parseVisitorId } from '@/lib/engagement-visitor'
 
 /**
- * Page view counter.
+ * Page view counter (idempotent per visitor per 24h).
  *
- * GET  /api/views?id=<pageId>  -> { views }
- * POST /api/views  { id }       -> increments and returns { views }
- *
- * Persistence relies on the shared Keyv store (Redis in production).
+ * GET  /api/views?id=<pageId>           -> { views, persisted }
+ * POST /api/views { id, visitor }       -> { views, recorded, persisted }
  */
 export default async function handler(
   req: NextApiRequest,
@@ -34,17 +34,26 @@ export default async function handler(
     return res.status(400).json({ error: 'missing id' })
   }
 
+  const persisted = isEngagementPersisted
+
   try {
     if (req.method === 'POST') {
-      const views = await incrementViewCount(id)
-      return res.status(200).json({ views })
+      const visitor = parseVisitorId(
+        (req.body as { visitor?: string } | undefined)?.visitor
+      )
+      if (!visitor) {
+        return res.status(400).json({ error: 'missing or invalid visitor' })
+      }
+
+      const result = await recordView(id, visitor)
+      return res.status(200).json({ ...result, persisted })
     }
 
-    const views = await getEngagementCount('views', id)
-    return res.status(200).json({ views })
+    const views = await getViewCount(id)
+    return res.status(200).json({ views, persisted })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('api/views error', message)
-    return res.status(500).json({ error: 'server error', views: 0 })
+    return res.status(500).json({ error: 'server error', views: 0, persisted })
   }
 }
