@@ -8,7 +8,7 @@ export default siteConfig({
   rootNotionSpaceId: null,
 
   // basic site info (required)
-  name: 'Azaira Znainik',
+  name: 'Знайник · Азайра',
   domain: 'znainik.azaira.bg',
   author: 'MarDaRaTin',
 

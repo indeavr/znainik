@@ -123,7 +123,7 @@ export default function OraclePage(props: PageProps) {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Оракул | Azaira Znainik</title>
+        <title>Оракул | Знайник · Азайра</title>
         <meta name="description" content="Галерия от 64 оракулски карти за медитация и съзерцание" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
