@@ -13,7 +13,23 @@ import {
 } from './get-notion-block-value'
 import { normalizeNotionApiRecordMap } from './notion-record-map'
 
-type GetPageOptions = NonNullable<Parameters<NotionAPI['getPage']>[1]>
+/**
+ * `www.notion.so/api/v3` answers 403/530 to server-side clients.
+ * notion-client 8 defaults to `app.notion.com`. A custom base URL
+ * (for example a public `*.notion.site` proxy) is still honored.
+ */
+export function resolveNotionApiBaseUrl(): string {
+  const configured = process.env.NOTION_API_BASE_URL?.trim().replace(/\/+$/, '')
+  if (!configured || configured === 'https://www.notion.so/api/v3') {
+    return 'https://app.notion.com/api/v3'
+  }
+  return configured
+}
+
+type GetPageOptions = NonNullable<Parameters<NotionAPI['getPage']>[1]> & {
+  /** Query only the first N views of each database. Listings need one view, not every duplicate. */
+  maxViewsPerCollection?: number
+}
 
 /**
  * notion-client's getPage runs getPageContentBlockIds before any consumer can
@@ -36,6 +52,7 @@ export class ZnainikNotionAPI extends NotionAPI {
       throwOnCollectionErrors = false,
       collectionReducerLimit = 999,
       fetchRelationPages = false,
+      maxViewsPerCollection,
       ofetchOptions
     } = options ?? {}
 
@@ -84,8 +101,12 @@ export class ZnainikNotionAPI extends NotionAPI {
           getBlockCollectionId(block, recordMap)
         if (collectionId) {
           const spaceId = block?.space_id
+          const viewIds =
+            maxViewsPerCollection == null
+              ? block.view_ids
+              : block.view_ids?.slice(0, maxViewsPerCollection)
           return (
-            block.view_ids?.map((collectionViewId) => ({
+            viewIds?.map((collectionViewId) => ({
               collectionId,
               collectionViewId,
               spaceId
@@ -168,5 +189,5 @@ export class ZnainikNotionAPI extends NotionAPI {
 }
 
 export const notion = new ZnainikNotionAPI({
-  apiBaseUrl: process.env.NOTION_API_BASE_URL
+  apiBaseUrl: resolveNotionApiBaseUrl()
 })

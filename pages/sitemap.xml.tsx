@@ -1,21 +1,17 @@
 import type { GetServerSideProps } from 'next'
 
-import { domain, host, rootNotionPageId } from '@/lib/config'
+import { loadArticles } from '@/lib/article-catalog'
+import { host } from '@/lib/config'
 import {
   type Article,
-  getArticlesFromRecordMap,
   getTagCounts,
   tagToSlug
 } from '@/lib/get-articles'
 import { loadTales } from '@/lib/get-stories-from-notion'
-import { resolveNotionPage } from '@/lib/resolve-notion-page'
 
-// Статиите идват от същото едно зареждане на корена, което ползва началната страница.
-// Обхождането на целия workspace (getSiteMap) удря лимитите на Notion и връщаше 500.
-async function loadArticles(): Promise<Article[]> {
+async function loadSitemapArticles(): Promise<Article[]> {
   try {
-    const props = await resolveNotionPage(domain)
-    return getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+    return await loadArticles()
   } catch (err) {
     console.error('sitemap: articles failed', err)
     return []
@@ -43,14 +39,15 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   }
 
   const [articles, storySlugs] = await Promise.all([
-    loadArticles(),
+    loadSitemapArticles(),
     loadStorySlugs()
   ])
 
-  // cache for up to 8 hours
   res.setHeader(
     'Cache-Control',
-    'public, max-age=28800, stale-while-revalidate=28800'
+    articles.length === 0
+      ? 'private, no-store'
+      : 'public, s-maxage=600, stale-while-revalidate=600'
   )
   res.setHeader('Content-Type', 'text/xml')
   res.write(createSitemap(articles, storySlugs))

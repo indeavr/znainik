@@ -1,3 +1,4 @@
+import ExpiryMap from 'expiry-map'
 import { type Block, type Collection, type ExtendedRecordMap } from 'notion-types'
 import {
   getBlockTitle,
@@ -545,7 +546,8 @@ export const fetchStoriesRecordMap = pMemoize(
     }
 
     return fetchStoriesRecordMapFromCollections()
-  }
+  },
+  { cache: new ExpiryMap(60_000) }
 )
 
 /**

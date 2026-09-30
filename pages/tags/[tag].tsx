@@ -6,16 +6,15 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { Footer } from '@/components/Footer'
 import { PageHead } from '@/components/PageHead'
 import { SiteHeader } from '@/components/SiteHeader'
+import { loadArticles } from '@/lib/article-catalog'
 import * as config from '@/lib/config'
-import { domain, isDev, rootNotionPageId, site } from '@/lib/config'
+import { isDev, site } from '@/lib/config'
 import {
   type Article,
-  getArticlesFromRecordMap,
   getTagCounts,
   slugToTagMatcher,
   tagToSlug
 } from '@/lib/get-articles'
-import { resolveNotionPage } from '@/lib/resolve-notion-page'
 import { getTagIcon } from '@/lib/tags'
 
 interface TagPageProps {
@@ -34,8 +33,7 @@ export const getStaticPaths: GetStaticPaths<TagParams> = async () => {
   }
 
   try {
-    const props = await resolveNotionPage(domain)
-    const articles = getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+    const articles = await loadArticles()
     const tags = getTagCounts(articles)
     return {
       paths: tags.map(({ tag }) => ({ params: { tag: tagToSlug(tag) } })),
@@ -53,8 +51,7 @@ export const getStaticProps: GetStaticProps<TagPageProps, TagParams> = async (
   const slug = context.params?.tag as string
 
   try {
-    const props = await resolveNotionPage(domain)
-    const articles = getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+    const articles = await loadArticles()
     const matches = slugToTagMatcher(slug)
 
     const matched = articles.filter((a) => a.tags.some((t) => matches(t)))

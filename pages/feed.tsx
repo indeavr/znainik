@@ -1,18 +1,9 @@
 import type { GetServerSideProps } from 'next'
-import { type ExtendedRecordMap } from 'notion-types'
-import {
-  getBlockParentPage,
-  getBlockTitle,
-  getPageProperty,
-  idToUuid
-} from 'notion-utils'
 import RSS from 'rss'
 
+import { loadArticles } from '@/lib/article-catalog'
 import * as config from '@/lib/config'
-import { getNotionBlockValue } from '@/lib/get-notion-block-value'
-import { getSiteMap } from '@/lib/get-site-map'
 import { getSocialImageUrl } from '@/lib/get-social-image-url'
-import { getCanonicalPageUrl } from '@/lib/map-page-url'
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   if (req.method !== 'GET') {
@@ -23,8 +14,8 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     return { props: {} }
   }
 
-  const siteMap = await getSiteMap()
-  const ttlMinutes = 24 * 60 // 24 hours
+  const articles = await loadArticles()
+  const ttlMinutes = 30
   const ttlSeconds = ttlMinutes * 60
 
   const feed = new RSS({
@@ -35,41 +26,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     ttl: ttlMinutes
   })
 
-  for (const pagePath of Object.keys(siteMap.canonicalPageMap)) {
-    const pageId = siteMap.canonicalPageMap[pagePath]!
-    const recordMap = siteMap.pageMap[pageId] as ExtendedRecordMap
-    if (!recordMap) continue
-
-    const keys = Object.keys(recordMap?.block || {})
-    const block = getNotionBlockValue(recordMap?.block?.[keys[0]!])
-    if (!block) continue
-
-    const parentPage = getBlockParentPage(block, recordMap)
-    const isBlogPost =
-      block.type === 'page' &&
-      block.parent_table === 'collection' &&
-      parentPage?.id === idToUuid(config.rootNotionPageId)
-    if (!isBlogPost) {
-      continue
-    }
-
-    const title = getBlockTitle(block, recordMap) || config.name
-    const description =
-      getPageProperty<string>('Description', block, recordMap) ||
-      config.description
-    const url = getCanonicalPageUrl(config.site, recordMap)(pageId)
-    const lastUpdatedTime = getPageProperty<number>(
-      'Last Updated',
-      block,
-      recordMap
-    )
-    const publishedTime = getPageProperty<number>('Published', block, recordMap)
-    const date = lastUpdatedTime
-      ? new Date(lastUpdatedTime)
-      : publishedTime
-        ? new Date(publishedTime)
-        : new Date()
-    const socialImageUrl = getSocialImageUrl(pageId)
+  for (const article of articles) {
+    const title = article.title || config.name
+    const description = article.description || config.description
+    const url = `${config.host}/${encodeURI(article.slug)}`
+    const date = article.date ? new Date(article.date) : new Date()
+    const socialImageUrl = getSocialImageUrl(article.pageId)
 
     feed.item({
       title,

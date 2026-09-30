@@ -5,10 +5,10 @@ import { Footer } from '@/components/Footer'
 import { PageHead } from '@/components/PageHead'
 import { SiteHeader } from '@/components/SiteHeader'
 import { TagChips } from '@/components/TagChips'
+import { loadArticles } from '@/lib/article-catalog'
 import * as config from '@/lib/config'
-import { domain, rootNotionPageId, site } from '@/lib/config'
-import { getArticlesFromRecordMap, getTagCounts } from '@/lib/get-articles'
-import { resolveNotionPage } from '@/lib/resolve-notion-page'
+import { site } from '@/lib/config'
+import { getTagCounts } from '@/lib/get-articles'
 
 interface TagsIndexProps {
   tags: Array<{ tag: string; count: number }>
@@ -16,8 +16,7 @@ interface TagsIndexProps {
 
 export const getStaticProps: GetStaticProps<TagsIndexProps> = async () => {
   try {
-    const props = await resolveNotionPage(domain)
-    const articles = getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+    const articles = await loadArticles()
     return { props: { tags: getTagCounts(articles) }, revalidate: 60 }
   } catch (err) {
     console.error('tags index error', err)

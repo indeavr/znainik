@@ -15,8 +15,10 @@ import {
  *
  * Usage:
  *   GET /api/revalidate?secret=SECRET&path=all
- *     → home, tags, prikazki (+ tale pages). Fast; no full sitemap crawl.
+ *     → home, tags, prikazki (+ tale pages). The home list is a single
+ *     collection query, so a newly published article shows up here.
  *     Optional: &extra=/my-article,/other-slug
+ *     The article URL itself is generated on first visit (fallback: blocking).
  *
  *   GET /api/revalidate?secret=SECRET&path=/my-article
  *     → one article page. Use after editing a single post.

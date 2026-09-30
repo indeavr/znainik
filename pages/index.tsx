@@ -10,15 +10,14 @@ import { Newsletter } from '@/components/Newsletter'
 import { PageHead } from '@/components/PageHead'
 import { SiteHeader } from '@/components/SiteHeader'
 import { TagChips } from '@/components/TagChips'
+import { loadArticles } from '@/lib/article-catalog'
 import * as config from '@/lib/config'
-import { domain, rootNotionPageId, site } from '@/lib/config'
+import { site } from '@/lib/config'
 import {
   type Article,
-  getArticlesFromRecordMap,
   getTagCounts,
   sortFeaturedArticles
 } from '@/lib/get-articles'
-import { resolveNotionPage } from '@/lib/resolve-notion-page'
 
 interface HomeProps {
   articles: Article[]
@@ -27,8 +26,7 @@ interface HomeProps {
 
 export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   try {
-    const props = await resolveNotionPage(domain)
-    const articles = getArticlesFromRecordMap(props.recordMap, rootNotionPageId)
+    const articles = await loadArticles()
     const tags = getTagCounts(articles)
 
     return {
@@ -36,7 +34,7 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
       revalidate: 60
     }
   } catch (err) {
-    console.error('home page error', domain, err)
+    console.error('home page error', err)
     throw err
   }
 }
