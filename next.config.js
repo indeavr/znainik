@@ -1,10 +1,12 @@
 import path from 'node:path'
+import { env } from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 import bundleAnalyzer from '@next/bundle-analyzer'
 
-// Disable analyzer toggling via environment to avoid linter issues.
-const withBundleAnalyzer = bundleAnalyzer({ enabled: false })
+// Analyze only when explicitly requested; keep normal builds lightweight.
+const withBundleAnalyzer = bundleAnalyzer({ enabled: env.ANALYZE === 'true' })
+const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /**
  * Next.js config factory.
@@ -22,12 +24,19 @@ const withBundleAnalyzer = bundleAnalyzer({ enabled: false })
 const createNextConfig = (phase) =>
   withBundleAnalyzer({
     staticPageGenerationTimeout: 300,
+    experimental: { cpus: 1, staticGenerationMaxConcurrency: 1 },
     // Use a writable distDir in development to avoid local permission issues,
     // default to `.next` in other phases for Vercel compatibility.
-    distDir: phase === 'phase-development-server' ? '.next-dev-writable-1' : '.next',
+    distDir:
+      env.NEXT_DIST_DIR ||
+      (phase === 'phase-development-server' ? '.next-dev-writable-1' : '.next'),
+    outputFileTracingRoot: dirname,
     images: {
       remotePatterns: [
         { protocol: 'https', hostname: 'www.notion.so' },
+        { protocol: 'https', hostname: 'app.notion.com' },
+        { protocol: 'https', hostname: 'img.notionusercontent.com' },
+        { protocol: 'https', hostname: 's3-us-west-2.amazonaws.com' },
         { protocol: 'https', hostname: 'notion.so' },
         { protocol: 'https', hostname: 'images.unsplash.com' },
         { protocol: 'https', hostname: 'abs.twimg.com' },
@@ -43,7 +52,6 @@ const createNextConfig = (phase) =>
       // Workaround for ensuring that `react` and `react-dom` resolve correctly
       // when using a locally-linked version of `react-notion-x`.
       // @see https://github.com/vercel/next.js/issues/50391
-      const dirname = path.dirname(fileURLToPath(import.meta.url))
       config.resolve.alias.react = path.resolve(dirname, 'node_modules/react')
       config.resolve.alias['react-dom'] = path.resolve(
         dirname,

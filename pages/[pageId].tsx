@@ -1,8 +1,8 @@
 import { type GetStaticProps } from 'next'
 
 import { NotionPage } from '@/components/NotionPage'
+import { loadArticles } from '@/lib/article-catalog'
 import { domain, isDev, pageUrlOverrides } from '@/lib/config'
-import { getSiteMap } from '@/lib/get-site-map'
 import { resolveNotionPage } from '@/lib/resolve-notion-page'
 import { type PageProps, type Params } from '@/lib/types'
 
@@ -14,7 +14,9 @@ export const getStaticProps: GetStaticProps<PageProps, Params> = async (
   try {
     const props = await resolveNotionPage(domain, rawPageId)
 
-    return { props, revalidate: 10 }
+    if (props.error?.statusCode === 404)
+      return { notFound: true, revalidate: 60 }
+    return { props, revalidate: 30 }
   } catch (err) {
     console.error('page error', domain, rawPageId, err)
 
@@ -35,13 +37,13 @@ export async function getStaticPaths() {
     }
   }
 
-  const siteMap = await getSiteMap()
+  const articles = await loadArticles()
 
   // Combine sitemap paths with URL overrides (e.g., /articles, /notes)
   // URL overrides might not be in the sitemap if not directly linked from root
   const allPageIds = [
     ...new Set([
-      ...Object.keys(siteMap.canonicalPageMap),
+      ...articles.map((article) => article.slug),
       ...Object.keys(pageUrlOverrides)
     ])
   ]
@@ -51,7 +53,6 @@ export async function getStaticPaths() {
     fallback: 'blocking'
   }
 
-  console.log(staticPaths.paths)
   return staticPaths
 }
 

@@ -10,19 +10,20 @@ import 'styles/site.css' // marketing / knowledge-base UI (home, tags, palette, 
 import 'styles/story.css' // interactive story-game experience (приказки)
 import 'styles/comments.css' // community comments + auth
 
+import type * as Fathom from 'fathom-client'
 import type { AppProps } from 'next/app'
+import type { PostHog } from 'posthog-js'
 import { IconContext } from '@react-icons/all-files'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import cs from 'classnames'
-import * as Fathom from 'fathom-client'
 import { Inter, Lora } from 'next/font/google'
 import { useRouter } from 'next/router'
-import { posthog } from 'posthog-js'
 import * as React from 'react'
 
 import { CommandPalette } from '@/components/CommandPalette'
 import { ReadingProgress } from '@/components/ReadingProgress'
+import { RouteLoading } from '@/components/RouteLoading'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { bootstrap } from '@/lib/bootstrap-client'
 import {
@@ -32,6 +33,7 @@ import {
   posthogConfig,
   posthogId
 } from '@/lib/config'
+import { useLiveContent } from '@/lib/use-live-content'
 
 // Cyrillic-first typography: a clean sans for UI/reading and an elegant serif
 // for headings, both self-hosted by next/font with the Cyrillic subset.
@@ -50,36 +52,48 @@ const fontSerif = Lora({
 })
 
 // Only run bootstrap on client side
-if (!isServer) {
+if (!isServer && process.env.NODE_ENV === 'development') {
   bootstrap()
 }
 
 // Using function declaration style to fix ESLint error
 function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
+  const liveProps = useLiveContent(pageProps)
 
   React.useEffect(() => {
-    function onRouteChangeComplete() {
-      if (fathomId) {
-        Fathom.trackPageview()
-      }
+    let fathom: typeof Fathom | undefined
+    let analytics: PostHog | undefined
+    let disposed = false
 
-      if (posthogId) {
-        posthog.capture('$pageview')
-      }
+    function onRouteChangeComplete() {
+      fathom?.trackPageview()
+      analytics?.capture('$pageview')
     }
 
     if (fathomId) {
-      Fathom.load(fathomId, fathomConfig)
+      void import('fathom-client')
+        .then((module) => {
+          if (disposed) return
+          fathom = module
+          fathom.load(fathomId!, fathomConfig)
+        })
+        .catch(() => {})
     }
-
     if (posthogId) {
-      posthog.init(posthogId, posthogConfig)
+      void import('posthog-js')
+        .then(({ posthog }) => {
+          if (disposed) return
+          analytics = posthog
+          analytics.init(posthogId!, posthogConfig)
+        })
+        .catch(() => {})
     }
 
     router.events.on('routeChangeComplete', onRouteChangeComplete)
 
     return () => {
+      disposed = true
       router.events.off('routeChangeComplete', onRouteChangeComplete)
     }
   }, [router.events])
@@ -88,7 +102,8 @@ function App({ Component, pageProps }: AppProps) {
     <IconContext.Provider value={{ style: { verticalAlign: 'middle' } }}>
       <div className={cs('app-root', fontSans.variable, fontSerif.variable)}>
         <ReadingProgress />
-        <Component {...pageProps} />
+        <RouteLoading />
+        <Component {...liveProps} />
         <CommandPalette />
         <ScrollToTop />
         <SpeedInsights />

@@ -1451,3 +1451,79 @@
     font-size: 16px;
   }
 }
+
+/* Loading feedback uses the same surfaces in light and dark themes. */
+.zn-skeleton {
+  height: 1.1rem;
+  border-radius: 0.4rem;
+  background: var(--border-soft);
+  animation: zn-skeleton-pulse 1.5s ease-in-out infinite alternate;
+}
+.zn-skeleton-lines {
+  display: grid;
+  gap: 1rem;
+}
+.zn-skeleton-lines > :last-child {
+  width: 65%;
+}
+.zn-skeleton-card {
+  pointer-events: none;
+}
+.zn-skeleton-card .zn-card-cover {
+  height: auto;
+  border-radius: 0;
+}
+.zn-page-skeleton {
+  padding-top: calc(var(--header-height) + 2rem);
+  min-height: 80vh;
+}
+.zn-skeleton-cover {
+  height: clamp(180px, 30vw, 320px);
+  margin-bottom: 2rem;
+}
+.zn-route-loading {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 10000;
+  pointer-events: none;
+}
+.zn-route-loading-bar {
+  display: block;
+  height: 3px;
+  width: 35%;
+  background: var(--brand-gradient);
+  animation: zn-route-progress 1.2s ease-in-out infinite;
+}
+.zn-route-loading-label {
+  position: absolute;
+  top: 12px;
+  right: var(--page-gutter);
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--fg-color);
+  box-shadow: var(--shadow-soft);
+  font-size: 14px;
+}
+@keyframes zn-skeleton-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+@keyframes zn-route-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(385%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zn-skeleton,
+  .zn-route-loading-bar {
+    animation: none;
+  }
+  .zn-route-loading-bar {
+    width: 100%;
+  }
+}

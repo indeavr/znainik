@@ -65,7 +65,8 @@ export default async function revalidate(
   const expected = process.env.REVALIDATE_SECRET ?? ''
   const secretStr = typeof secret === 'string' ? secret : ''
   if (
-    secretStr.length !== expected.length ||
+    Buffer.byteLength(secretStr, 'utf8') !==
+      Buffer.byteLength(expected, 'utf8') ||
     !timingSafeEqual(
       Buffer.from(secretStr, 'utf8'),
       Buffer.from(expected, 'utf8')
@@ -74,7 +75,8 @@ export default async function revalidate(
     return res.status(401).json({ error: 'Invalid secret' })
   }
 
-  const mode = pathParam === 'all' || !pathParam || pathParam === '' ? 'all' : pathParam
+  const mode =
+    pathParam === 'all' || !pathParam || pathParam === '' ? 'all' : pathParam
 
   try {
     if (mode === 'all') {
@@ -88,8 +90,7 @@ export default async function revalidate(
         revalidated: allOk,
         mode: 'all',
         results,
-        hint:
-          'Revalidates paths one at a time. If you see 504, deploy with vercel.json maxDuration and retry path=/slug alone. With Deployment Protection enabled, add header x-vercel-protection-bypass.'
+        hint: 'Revalidates paths one at a time. If you see 504, deploy with vercel.json maxDuration and retry path=/slug alone. With Deployment Protection enabled, add header x-vercel-protection-bypass.'
       })
     }
 

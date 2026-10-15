@@ -4,3 +4,6 @@ dist/
 node_modules/
 .next/
 .vercel/
+
+.next-*/
+patches/modified.js

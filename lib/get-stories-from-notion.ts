@@ -1,5 +1,9 @@
 import ExpiryMap from 'expiry-map'
-import { type Block, type Collection, type ExtendedRecordMap } from 'notion-types'
+import {
+  type Block,
+  type Collection,
+  type ExtendedRecordMap
+} from 'notion-types'
 import {
   getBlockTitle,
   getPageProperty,
@@ -15,7 +19,10 @@ import {
   storiesTalesCollectionId
 } from './config'
 import { getCanonicalPageId } from './get-canonical-page-id'
-import { getNotionBlockValue, getNotionCollectionValue } from './get-notion-block-value'
+import {
+  getNotionBlockValue,
+  getNotionCollectionValue
+} from './get-notion-block-value'
 import { mapImageUrl } from './map-image-url'
 import { notion } from './notion-api'
 import { normalizeNotionApiRecordMap } from './notion-record-map'
@@ -95,7 +102,11 @@ function firstNumberProperty(
 
 function isPublicPage(block: Block, recordMap: ExtendedRecordMap): boolean {
   for (const name of PUBLIC_PROPS) {
-    const value = getPageProperty<boolean | string | null>(name, block, recordMap)
+    const value = getPageProperty<boolean | string | null>(
+      name,
+      block,
+      recordMap
+    )
     if (value === false) return false
     if (typeof value === 'string' && value.toLowerCase() === 'no') return false
   }
@@ -106,7 +117,10 @@ function getCollectionSchema(
   recordMap: ExtendedRecordMap,
   collectionId: string
 ): Record<string, SchemaProp> {
-  return getNotionCollectionValue(recordMap.collection?.[toNotionUuid(collectionId)])?.schema ?? {}
+  return (
+    getNotionCollectionValue(recordMap.collection?.[toNotionUuid(collectionId)])
+      ?.schema ?? {}
+  )
 }
 
 function findPropertyName(
@@ -156,7 +170,9 @@ function getCollectionName(
   recordMap: ExtendedRecordMap,
   collectionId: string
 ): string {
-  const raw = getNotionCollectionValue(recordMap.collection?.[toNotionUuid(collectionId)])?.name
+  const raw = getNotionCollectionValue(
+    recordMap.collection?.[toNotionUuid(collectionId)]
+  )?.name
   if (!raw) return ''
   return getTextContent(raw).toLowerCase()
 }
@@ -282,9 +298,13 @@ function parseHeroSlugsFromBlock(
   return []
 }
 
-function resolveCover(block: Block, recordMap: ExtendedRecordMap): string | undefined {
+function resolveCover(
+  block: Block,
+  recordMap: ExtendedRecordMap
+): string | undefined {
   const coverRaw =
-    block.format?.page_cover || firstStringProperty(COVER_PROPS, block, recordMap)
+    block.format?.page_cover ||
+    firstStringProperty(COVER_PROPS, block, recordMap)
   if (!coverRaw) return undefined
   return mapImageUrl(coverRaw, block) ?? undefined
 }
@@ -372,7 +392,8 @@ function parseTaleDraft(
   if (!title) return null
 
   const slug =
-    getCanonicalPageId(block.id, recordMap, { uuid: false }) ?? slugifyTitle(title)
+    getCanonicalPageId(block.id, recordMap, { uuid: false }) ??
+    slugifyTitle(title)
 
   const intro =
     firstStringProperty(INTRO_PROPS, block, recordMap) ||
@@ -383,7 +404,8 @@ function parseTaleDraft(
     id: toNotionUuid(block.id),
     slug,
     title,
-    subtitle: firstStringProperty(SUBTITLE_PROPS, block, recordMap) || undefined,
+    subtitle:
+      firstStringProperty(SUBTITLE_PROPS, block, recordMap) || undefined,
     cover: resolveCover(block, recordMap),
     intro,
     heroSlugs: parseHeroSlugsFromBlock(block, recordMap),
@@ -403,7 +425,8 @@ function parseEpisodeDraft(
   if (!title) return null
 
   const slug =
-    getCanonicalPageId(block.id, recordMap, { uuid: false }) ?? slugifyTitle(title)
+    getCanonicalPageId(block.id, recordMap, { uuid: false }) ??
+    slugifyTitle(title)
 
   const taleKey =
     firstStringProperty(TALE_KEY_PROPS, block, recordMap).toLowerCase() || null
@@ -425,7 +448,8 @@ const STORY_PAGE_OPTIONS = {
   fetchCollections: true,
   fetchRelationPages: true,
   concurrency: 1,
-  collectionReducerLimit: 999
+  collectionReducerLimit: 999,
+  throwOnCollectionErrors: true
 } as const
 
 function mergeRecordMaps(...maps: ExtendedRecordMap[]): ExtendedRecordMap {
@@ -564,7 +588,9 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
     detectStoryCollections(recordMap)
 
   const episodesSchema = getCollectionSchema(recordMap, episodesCollectionId)
-  const taleRelationProp = findPropertyName(episodesSchema, { type: 'relation' })
+  const taleRelationProp = findPropertyName(episodesSchema, {
+    type: 'relation'
+  })
 
   const taleDrafts = new Map<string, TaleDraft>()
 
@@ -659,7 +685,8 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
     }
 
     const sortedEpisodes = episodes.toSorted(
-      (a, b) => (a.order ?? 999) - (b.order ?? 999) || a.title.localeCompare(b.title)
+      (a, b) =>
+        (a.order ?? 999) - (b.order ?? 999) || a.title.localeCompare(b.title)
     )
 
     tales.push({
@@ -671,7 +698,9 @@ export function getTalesFromRecordMap(recordMap: ExtendedRecordMap): Tale[] {
       intro: draft.intro || sortedEpisodes[0]?.summary || '',
       heroSlugs: draft.heroSlugs,
       notionPageId: draft.notionPageId,
-      episodes: sortedEpisodes.map(({ order: _o, taleIds: _t, taleKey: _k, ...ep }) => ep)
+      episodes: sortedEpisodes.map(
+        ({ order: _o, taleIds: _t, taleKey: _k, ...ep }) => ep
+      )
     })
   }
 
@@ -728,6 +757,6 @@ export async function loadTales(): Promise<Tale[]> {
     return tales.map(serializeTale)
   } catch (err) {
     console.error('story: failed to load tales from Notion', err)
-    return []
+    throw err
   }
 }

@@ -2,6 +2,9 @@ import * as React from 'react'
 
 import type { Article } from '@/lib/get-articles'
 import { ArticleCard } from '@/components/ArticleCard'
+import { fetchArticleFeed } from '@/lib/article-feed'
+
+import { ContentSkeleton } from './ContentSkeleton'
 
 function sameId(a: string, b: string): boolean {
   return a.replaceAll('-', '') === b.replaceAll('-', '')
@@ -13,15 +16,16 @@ function sameId(a: string, b: string): boolean {
  */
 export function RelatedPosts({ pageId }: { pageId: string }) {
   const [related, setRelated] = React.useState<Article[]>([])
+  const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setRelated([])
 
     async function run() {
       try {
-        const res = await fetch('/api/articles')
-        const data = (await res.json()) as { articles?: Article[] }
-        const articles = data.articles ?? []
+        const articles = await fetchArticleFeed()
         if (cancelled) return
 
         const current = articles.find((a) => sameId(a.pageId, pageId))
@@ -49,7 +53,9 @@ export function RelatedPosts({ pageId }: { pageId: string }) {
 
         setRelated(top)
       } catch {
-        /* ignore */
+        /* Keep the article readable when recommendations are unavailable. */
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
 
@@ -59,6 +65,12 @@ export function RelatedPosts({ pageId }: { pageId: string }) {
     }
   }, [pageId])
 
+  if (loading)
+    return (
+      <div className='zn-article-extras zn-related'>
+        <ContentSkeleton cards />
+      </div>
+    )
   if (related.length === 0) return null
 
   return (

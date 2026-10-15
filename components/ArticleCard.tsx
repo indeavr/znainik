@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
 
@@ -18,12 +19,20 @@ function formatDate(date: number | null): string | null {
 
 export function ArticleCard({ article }: { article: Article }) {
   const date = formatDate(article.date)
+  const [failedCover, setFailedCover] = React.useState<string | null>(null)
 
   return (
-    <Link href={`/${article.slug}`} className='zn-card'>
+    <Link href={`/${article.slug}`} className='zn-card' prefetch={false}>
       <div className='zn-card-cover'>
-        {article.cover ? (
-          <img src={article.cover} alt={article.title} loading='lazy' />
+        {article.cover && failedCover !== article.cover ? (
+          <Image
+            src={article.cover}
+            alt={article.title}
+            fill
+            onError={() => setFailedCover(article.cover)}
+            unoptimized={/\.gif(?:[?#]|$)/i.test(article.cover)}
+            sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px'
+          />
         ) : (
           <div className='zn-card-cover-fallback' aria-hidden='true'>
             {article.emoji || '✦'}

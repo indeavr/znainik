@@ -1,10 +1,14 @@
-import { LoadingIcon } from './LoadingIcon'
-import styles from './styles.module.css'
+import { ContentSkeleton } from './ContentSkeleton'
+import { SiteHeader } from './SiteHeader'
 
 export function Loading() {
   return (
-    <div className={styles.container}>
-      <LoadingIcon />
+    <div className='zn-page'>
+      <SiteHeader />
+      <main className='zn-container zn-section zn-page-skeleton'>
+        <div className='zn-skeleton zn-skeleton-cover' aria-hidden='true' />
+        <ContentSkeleton />
+      </main>
     </div>
   )
 }

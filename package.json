@@ -27,14 +27,16 @@
     "analyze:browser": "cross-env BUNDLE_ANALYZE=browser next build",
     "test": "run-p test:*",
     "test:lint": "eslint .",
-    "test:prettier": "prettier '**/*.{js,jsx,ts,tsx}' --check"
+    "test:prettier": "prettier '**/*.{js,jsx,ts,tsx}' --check",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@fisch0920/use-dark-mode": "^2.4.0",
     "@keyvhq/core": "^1.6.9",
     "@keyvhq/redis": "^1.6.10",
-    "@notionhq/client": "^3.0.1",
     "@neondatabase/auth": "^0.4.2-beta",
+    "@notionhq/client": "^3.0.1",
     "@react-icons/all-files": "^4.1.0",
     "@vercel/analytics": "^1.5.0",
     "@vercel/postgres": "^0.10.0",
@@ -77,6 +79,7 @@
     "eslint": "^9.35.0",
     "npm-run-all2": "^8.0.4",
     "prettier": "^3.6.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.2"
   },
   "overrides": {

@@ -19,13 +19,15 @@ export default async function handler(
 
     res.setHeader(
       'Cache-Control',
-      'public, s-maxage=60, stale-while-revalidate=120'
+      'public, s-maxage=30, stale-while-revalidate=30'
     )
     return res.status(200).json({ articles })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('api/articles error', message)
     res.setHeader('Cache-Control', 'private, no-store')
-    return res.status(500).json({ error: 'failed to load articles', articles: [] })
+    return res
+      .status(500)
+      .json({ error: 'failed to load articles', articles: [] })
   }
 }

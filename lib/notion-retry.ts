@@ -25,9 +25,9 @@ export async function withNotionRetry<T>(
     maxDelayMs?: number
   }
 ): Promise<T> {
-  const retries = options?.retries ?? 8
-  let delay = options?.baseDelayMs ?? 2500
-  const maxDelay = options?.maxDelayMs ?? 90_000
+  const retries = options?.retries ?? 3
+  let delay = options?.baseDelayMs ?? 1000
+  const maxDelay = options?.maxDelayMs ?? 5000
   let lastErr: unknown
 
   for (let attempt = 0; attempt < retries; attempt++) {

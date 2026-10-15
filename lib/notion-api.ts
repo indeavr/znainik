@@ -75,16 +75,19 @@ export class ZnainikNotionAPI extends NotionAPI {
     recordMap.signed_urls = {}
 
     if (fetchMissingBlocks) {
+      const attempted = new Set<string>()
       while (true) {
         const pendingBlockIds = getPageContentBlockIds(recordMap).filter(
-          (id) => !recordMap.block[id]
+          (id) => !recordMap.block[id] && !attempted.has(id)
         )
         if (!pendingBlockIds.length) {
           break
         }
-        const newBlocks = await this.getBlocks(pendingBlockIds, ofetchOptions).then(
-          (res) => res.recordMap.block
-        )
+        for (const id of pendingBlockIds) attempted.add(id)
+        const newBlocks = await this.getBlocks(
+          pendingBlockIds,
+          ofetchOptions
+        ).then((res) => res.recordMap.block)
         recordMap.block = { ...recordMap.block, ...newBlocks }
         normalizeNotionApiRecordMap(recordMap)
       }
@@ -115,8 +118,23 @@ export class ZnainikNotionAPI extends NotionAPI {
         }
         return []
       })
+      const seenViews = new Map<string, Set<string>>()
+      const collectionInstances = allCollectionInstances.filter(
+        ({ collectionId, collectionViewId }) => {
+          const views = seenViews.get(collectionId) ?? new Set<string>()
+          if (views.has(collectionViewId)) return false
+          if (
+            maxViewsPerCollection != null &&
+            views.size >= maxViewsPerCollection
+          )
+            return false
+          views.add(collectionViewId)
+          seenViews.set(collectionId, views)
+          return true
+        }
+      )
       await pMap(
-        allCollectionInstances,
+        collectionInstances,
         async (collectionInstance) => {
           const { collectionId, collectionViewId, spaceId } = collectionInstance
           const collectionView = getNotionCollectionViewValue(
@@ -189,5 +207,6 @@ export class ZnainikNotionAPI extends NotionAPI {
 }
 
 export const notion = new ZnainikNotionAPI({
-  apiBaseUrl: resolveNotionApiBaseUrl()
+  apiBaseUrl: resolveNotionApiBaseUrl(),
+  ofetchOptions: { timeout: 10_000, retry: 0 }
 })

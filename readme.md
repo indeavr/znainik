@@ -195,3 +195,65 @@ See the [contribution guide](contributing.md) and join our amazing list of [cont
 MIT © [Travis Fischer](https://transitivebullsh.it)
 
 Support my open source work by <a href="https://twitter.com/transitive_bs">following me on twitter <img src="https://storage.googleapis.com/saasify-assets/twitter-logo.svg" alt="twitter" height="24px" align="center"></a>
+
+## Content freshness and performance
+
+Public Notion pages keep their fast, shared Next.js ISR cache. Open tabs check
+that snapshot every 30 seconds and when returning to the tab. The check starts
+1.5 seconds after navigation, pauses in hidden/offline tabs, cancels on navigation,
+and keeps the last successful content on network errors. Updates replace props
+without remounting the page or resetting scroll. Explicit Notion removals return
+404; transient upstream failures preserve the last good ISR page.
+
+No manual `/api/revalidate` call or Notion webhook setup is required for this
+flow. This is polling, not instant push: an expired ISR response triggers a
+background regeneration, and a later check receives it. Articles use a 30-second
+ISR interval; home, tags, stories and oracle use 60 seconds. The article catalog
+has a separate 15-second server memo. Notion latency/rate limits can extend the
+update delay. The existing authenticated revalidation endpoint remains available.
+
+The client reads the same `/_next/data/<buildId>/<path>.json` snapshots as the
+Pages Router. Recheck this integration when upgrading Next.js or introducing a
+base path, locale prefixes or rewrites. Failed/unknown-build responses do not
+replace a working page.
+
+Notion image URLs use `app.notion.com`; the legacy `www.notion.so` image proxy
+returned 403 in verification. Cards use responsive Next images with a fallback.
+Optional blur previews have bounded request time and concurrency. Production
+build generation uses one worker and one page at a time to avoid Notion 429
+bursts. Search and related posts share a short-lived client feed cache, retry
+failures and show skeletons. Analytics SDKs load only when configured.
+
+The oracle sends only its 64 public card summaries, rather than a hidden Notion
+renderer and its full record map. Verified payload: approximately 12 KB instead
+of 2.4 MB. Long article/story bodies can still produce Next's large-page-data
+warnings; their actual content is preserved.
+
+### Verification
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test:lint
+pnpm test:unit
+pnpm build
+pnpm start
+```
+
+`test:unit` covers cache expiry/concurrent requests/error recovery, missing Notion
+blocks, duplicate collection queries, bounded retries, public-page checks,
+image URL mapping and refresh URL handling. ESLint/Prettier exclude generated
+Next output and `patches/modified.js` (an unused compiled vendor snapshot).
+Existing formatting differences in untouched source files are still reported
+by `test:prettier`.
+
+For an isolated local check, set `NEXT_DIST_DIR=.next-qa-build` for both `build`
+and `start`, or `NEXT_DIST_DIR=.next-qa-dev` for `dev`. This also avoids modifying
+an existing build directory with different ownership.
+
+Browser regression checks: home → Cyrillic tag → article; search failure → retry,
+keyboard search and Escape; slow navigation feedback; story next/previous; oracle
+card open/close; mobile image loading/no overflow; a changed ISR JSON response
+appearing without scroll loss; a failed response followed by recovery. Use
+controlled browser response fixtures for edits/errors rather than changing live
+Notion content during QA.

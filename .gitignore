@@ -11,7 +11,7 @@
 # next.js
 /.next/
 /out/
-.next-dev-writable-1/
+.next-*/
 
 # production
 /build

@@ -2,16 +2,19 @@ import { type GetStaticPaths, type GetStaticProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type ExtendedRecordMap } from 'notion-types'
+import pMap from 'p-map'
 import * as React from 'react'
 import { NotionRenderer } from 'react-notion-x'
 
 import { Footer } from '@/components/Footer'
+import { Loading } from '@/components/Loading'
 import { PageHead } from '@/components/PageHead'
 import { SiteHeader } from '@/components/SiteHeader'
 import { HeroTags } from '@/components/story/HeroTags'
 import { StoryExperience } from '@/components/story/StoryExperience'
 import { site } from '@/lib/config'
 import { loadTales } from '@/lib/get-stories-from-notion'
+import { mapImageUrl } from '@/lib/map-image-url'
 import { notion } from '@/lib/notion-api'
 import { withNotionRetry } from '@/lib/notion-retry'
 import { type Tale } from '@/lib/story'
@@ -39,33 +42,35 @@ export const getStaticProps: GetStaticProps<TaleProps> = async ({ params }) => {
   const tale = tales.find((t) => t.slug === slug)
 
   if (!tale) {
-    return { notFound: true }
+    return { notFound: true, revalidate: 60 }
   }
 
   const notionPages: Record<string, ExtendedRecordMap> = {}
   let canonicalPage: ExtendedRecordMap | null = null
 
-  for (const episode of tale.episodes) {
-    if (!episode.notionPageId) continue
-    try {
+  await pMap(
+    tale.episodes,
+    async (episode) => {
+      if (!episode.notionPageId) return
       notionPages[episode.id] = await withNotionRetry(() =>
-        notion.getPage(episode.notionPageId!)
+        notion.getPage(episode.notionPageId!, {
+          concurrency: 1,
+          throwOnCollectionErrors: true
+        })
       )
-    } catch (err) {
-      console.error(
-        'story: failed to fetch notion page',
-        episode.notionPageId,
-        err
-      )
-    }
-  }
+    },
+    { concurrency: 2 }
+  )
 
   if (tale.notionPageId) {
     try {
       const talePage = await withNotionRetry(() =>
         notion.getPage(tale.notionPageId!)
       )
-      const canonicalId = findCanonicalNotionPageId(talePage, tale.notionPageId!)
+      const canonicalId = findCanonicalNotionPageId(
+        talePage,
+        tale.notionPageId!
+      )
       if (canonicalId) {
         const episodeMatch = tale.episodes.find(
           (ep) => ep.notionPageId === canonicalId
@@ -75,7 +80,12 @@ export const getStaticProps: GetStaticProps<TaleProps> = async ({ params }) => {
           (await withNotionRetry(() => notion.getPage(canonicalId)))
       }
     } catch (err) {
-      console.error('story: failed to resolve canonical page', tale.notionPageId, err)
+      console.error(
+        'story: failed to resolve canonical page',
+        tale.notionPageId,
+        err
+      )
+      throw err
     }
   }
 
@@ -85,7 +95,7 @@ export const getStaticProps: GetStaticProps<TaleProps> = async ({ params }) => {
       notionPages,
       canonicalPage
     },
-    revalidate: 300
+    revalidate: 60
   }
 }
 
@@ -96,6 +106,7 @@ function CanonicalBody({ recordMap }: { recordMap: ExtendedRecordMap }) {
       <NotionRenderer
         recordMap={recordMap}
         fullPage={false}
+        mapImageUrl={mapImageUrl}
         darkMode={isDarkMode}
       />
     </div>
@@ -108,7 +119,7 @@ export default function TalePage({
   canonicalPage
 }: TaleProps) {
   const router = useRouter()
-  if (router.isFallback || !tale) return null
+  if (router.isFallback || !tale) return <Loading />
 
   return (
     <div className='zn-page'>
@@ -116,7 +127,11 @@ export default function TalePage({
         site={site}
         title={`${tale.title} — Приказки`}
         description={tale.intro}
-        image={tale.cover ? `https://${site.domain}${tale.cover}` : undefined}
+        image={
+          tale.cover
+            ? new URL(tale.cover, `https://${site.domain}`).href
+            : undefined
+        }
       />
 
       <SiteHeader active='prikazki' />
@@ -127,7 +142,9 @@ export default function TalePage({
             ← Всички приказки
           </Link>
           <h1 className='zn-story-title'>{tale.title}</h1>
-          {tale.subtitle && <p className='zn-story-subtitle'>{tale.subtitle}</p>}
+          {tale.subtitle && (
+            <p className='zn-story-subtitle'>{tale.subtitle}</p>
+          )}
           {tale.intro && !canonicalPage && (
             <p className='zn-story-intro'>{tale.intro}</p>
           )}

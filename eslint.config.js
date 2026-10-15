@@ -1,6 +1,7 @@
 import { config } from '@fisch0920/config/eslint'
 
 export default [
+  { ignores: ['.next*/**', 'out/**', 'coverage/**', 'patches/modified.js'] },
   ...config,
   {
     files: ['**/*.ts', '**/*.tsx'],

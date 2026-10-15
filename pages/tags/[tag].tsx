@@ -36,7 +36,9 @@ export const getStaticPaths: GetStaticPaths<TagParams> = async () => {
     const articles = await loadArticles()
     const tags = getTagCounts(articles)
     return {
-      paths: tags.map(({ tag }) => ({ params: { tag: tagToSlug(tag) } })),
+      paths: tags.map(({ tag }) => ({
+        params: { tag: decodeURIComponent(tagToSlug(tag)) }
+      })),
       fallback: 'blocking'
     }
   } catch (err) {
@@ -84,7 +86,11 @@ export default function TagPage({ tag, articles }: TagPageProps) {
       <main className='zn-page-main'>
         <section className='zn-container zn-hero zn-tags-hero'>
           <span className='zn-hero-eyebrow'>
-            <Link href='/tags' className='zn-back-link' style={{ marginBottom: 0 }}>
+            <Link
+              href='/tags'
+              className='zn-back-link'
+              style={{ marginBottom: 0 }}
+            >
               ← Всички теми
             </Link>
           </span>
@@ -95,8 +101,8 @@ export default function TagPage({ tag, articles }: TagPageProps) {
             {tag}
           </h1>
           <p className='zn-hero-sub'>
-            {articles.length}{' '}
-            {articles.length === 1 ? 'есенция' : 'есенции'} по тази тема
+            {articles.length} {articles.length === 1 ? 'есенция' : 'есенции'} по
+            тази тема
           </p>
         </section>
 

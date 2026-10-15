@@ -8,5 +8,10 @@ export const mapImageUrl = (url: string | undefined, block: Block) => {
     return url
   }
 
-  return defaultMapImageUrl(url, block)
+  const mapped = defaultMapImageUrl(url, block)
+  // Notion's legacy image host rejects server-side requests (403).
+  return mapped?.replace(
+    /^https:\/\/(?:www\.)?notion\.so\//,
+    'https://app.notion.com/'
+  )
 }

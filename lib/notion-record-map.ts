@@ -1,6 +1,10 @@
 import type { NotionAPI } from 'notion-client'
 import type { ExtendedRecordMap } from 'notion-types'
-import { getBlockCollectionId, getPageContentBlockIds, parsePageId } from 'notion-utils'
+import {
+  getBlockCollectionId,
+  getPageContentBlockIds,
+  parsePageId
+} from 'notion-utils'
 import pMap from 'p-map'
 
 import {
@@ -14,7 +18,9 @@ import { withNotionRetry } from './notion-retry'
  * notion-utils 7.10+ adds `getBlockValue` and fixes traversal (issue #682); we still
  * flatten once so code that reads `recordMap.block[id].value` directly keeps working.
  */
-export function normalizeNotionApiRecordMap(recordMap: ExtendedRecordMap): void {
+export function normalizeNotionApiRecordMap(
+  recordMap: ExtendedRecordMap
+): void {
   const tables = [
     recordMap.block,
     recordMap.collection,
@@ -26,7 +32,11 @@ export function normalizeNotionApiRecordMap(recordMap: ExtendedRecordMap): void 
     if (!table) continue
     for (const id of Object.keys(table)) {
       const entry = table[id] as { value?: unknown } | undefined
-      if (!entry?.value || typeof entry.value !== 'object' || entry.value === null) {
+      if (
+        !entry?.value ||
+        typeof entry.value !== 'object' ||
+        entry.value === null
+      ) {
         continue
       }
       const outer = entry.value as Record<string, unknown>
@@ -71,7 +81,8 @@ export async function hydrateNotionCollectionQueries(
     const block = getNotionBlockValue(recordMap.block[blockId])
     const collectionId =
       block &&
-      (block.type === 'collection_view' || block.type === 'collection_view_page') &&
+      (block.type === 'collection_view' ||
+        block.type === 'collection_view_page') &&
       getBlockCollectionId(block, recordMap)
     if (collectionId) {
       const spaceId = block?.space_id
@@ -112,7 +123,7 @@ export async function hydrateNotionCollectionQueries(
             {
               limit: collectionReducerLimit,
               spaceId,
-              ofetchOptions: { timeout: 60_000 }
+              ofetchOptions: { timeout: 10_000, retry: 0 }
             }
           )
         )

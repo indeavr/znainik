@@ -4,11 +4,7 @@ import Image from 'next/legacy/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type PageBlock } from 'notion-types'
-import {
-  formatDate,
-  getBlockTitle,
-  getPageProperty
-} from 'notion-utils'
+import { formatDate, getBlockTitle, getPageProperty } from 'notion-utils'
 import * as React from 'react'
 import BodyClassName from 'react-body-classname'
 import {
@@ -302,9 +298,7 @@ export function NotionPage({
         {(publishedDate || readMinutes > 0 || author.name) && (
           <div className='zn-article-extras zn-meta-row'>
             {publishedDate && <span>{publishedDate}</span>}
-            {publishedDate && author.name && (
-              <span className='zn-card-dot' />
-            )}
+            {publishedDate && author.name && <span className='zn-card-dot' />}
             {author.name && <span>{author.name}</span>}
             {(publishedDate || author.name) && readMinutes > 0 && (
               <span className='zn-card-dot' />
@@ -333,22 +327,6 @@ export function NotionPage({
   }
 
   const title = getBlockTitle(block, recordMap) || site.name
-
-  console.log('notion page', {
-    isDev: config.isDev,
-    title,
-    pageId,
-    rootNotionPageId: site.rootNotionPageId,
-    recordMap
-  })
-
-  if (!config.isServer) {
-    // add important objects to the window global for easy debugging
-    const g = window as any
-    g.pageId = pageId
-    g.recordMap = recordMap
-    g.block = block
-  }
 
   const canonicalPageUrl = config.isDev
     ? undefined
@@ -404,7 +382,6 @@ export function NotionPage({
         pageAside={pageAside}
         footer={footer}
       />
-
     </>
   )
 }

@@ -1,3 +1,4 @@
+import ExpiryMap from 'expiry-map'
 import {
   type ExtendedRecordMap,
   type SearchParams,
@@ -67,15 +68,19 @@ const getNavigationLinkPages = pMemoize(
     }
 
     return []
-  }
+  },
+  { cache: new ExpiryMap(60_000) }
 )
 
-const notionPageConcurrency = Number(process.env.NOTION_GETPAGE_CONCURRENCY ?? '2')
+const notionPageConcurrency = Number(
+  process.env.NOTION_GETPAGE_CONCURRENCY ?? '2'
+)
 
 export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
   let recordMap = await withNotionRetry(() =>
     notion.getPage(pageId, {
-      concurrency: notionPageConcurrency
+      concurrency: notionPageConcurrency,
+      throwOnCollectionErrors: true
     })
   )
   normalizeNotionApiRecordMap(recordMap)
@@ -90,16 +95,19 @@ export async function getPage(pageId: string): Promise<ExtendedRecordMap> {
     const navigationLinkRecordMaps = await getNavigationLinkPages()
 
     if (navigationLinkRecordMaps?.length) {
-      recordMap = navigationLinkRecordMaps.reduce((map, navigationLinkRecordMap) => {
-        const merged = mergeRecordMaps(map, navigationLinkRecordMap)
-        return {
-          ...merged,
-          collection_query: deepMergeCollectionQuery(
-            map.collection_query,
-            navigationLinkRecordMap.collection_query
-          )
-        }
-      }, recordMap)
+      recordMap = navigationLinkRecordMaps.reduce(
+        (map, navigationLinkRecordMap) => {
+          const merged = mergeRecordMaps(map, navigationLinkRecordMap)
+          return {
+            ...merged,
+            collection_query: deepMergeCollectionQuery(
+              map.collection_query,
+              navigationLinkRecordMap.collection_query
+            )
+          }
+        },
+        recordMap
+      )
       normalizeNotionApiRecordMap(recordMap)
       await hydrateNotionCollectionQueries(notion, recordMap, pageId, {
         concurrency: notionPageConcurrency

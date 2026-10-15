@@ -4,6 +4,7 @@ import { type ExtendedRecordMap } from 'notion-types'
 import * as React from 'react'
 import { NotionRenderer } from 'react-notion-x'
 
+import { mapImageUrl } from '@/lib/map-image-url'
 import { type Tale } from '@/lib/story'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
@@ -18,18 +19,28 @@ export function StoryExperience({
   tale: Tale
   notionPages?: Record<string, ExtendedRecordMap>
 }) {
-  const [activeIndex, setActiveIndex] = React.useState(0)
+  const [activeId, setActiveId] = React.useState<string | null>(null)
+  const activeIndex = Math.max(
+    0,
+    tale.episodes.findIndex((entry) => entry.id === activeId)
+  )
   const contentRef = React.useRef<HTMLDivElement>(null)
   const { isDarkMode } = useDarkMode()
 
   const episode = tale.episodes[activeIndex]
 
-  const selectEpisode = React.useCallback((index: number) => {
-    setActiveIndex(index)
-    window.requestAnimationFrame(() => {
-      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }, [])
+  const selectEpisode = React.useCallback(
+    (index: number) => {
+      setActiveId(tale.episodes[index]?.id ?? null)
+      window.requestAnimationFrame(() => {
+        contentRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        })
+      })
+    },
+    [tale.episodes]
+  )
 
   const episodeRecordMap = episode?.notionPageId
     ? notionPages[episode.id]
@@ -59,6 +70,7 @@ export function StoryExperience({
                   <NotionRenderer
                     recordMap={episodeRecordMap}
                     fullPage={false}
+                    mapImageUrl={mapImageUrl}
                     darkMode={isDarkMode}
                   />
                 </div>
@@ -74,7 +86,9 @@ export function StoryExperience({
                 <a
                   className='zn-story-readmore'
                   href={episode.href}
-                  target={episode.href.startsWith('http') ? '_blank' : undefined}
+                  target={
+                    episode.href.startsWith('http') ? '_blank' : undefined
+                  }
                   rel={
                     episode.href.startsWith('http')
                       ? 'noopener noreferrer'
@@ -86,10 +100,7 @@ export function StoryExperience({
               )}
 
               {(episode.heroes ?? []).length > 0 && (
-                <HeroTags
-                  slugs={episode.heroes ?? []}
-                  label='В този епизод'
-                />
+                <HeroTags slugs={episode.heroes ?? []} label='В този епизод' />
               )}
 
               <nav className='zn-story-nav'>

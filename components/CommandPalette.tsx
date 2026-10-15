@@ -2,6 +2,9 @@ import { useRouter } from 'next/router'
 import * as React from 'react'
 
 import type { Article } from '@/lib/get-articles'
+import { fetchArticleFeed } from '@/lib/article-feed'
+
+import { ContentSkeleton } from './ContentSkeleton'
 
 /** Fired by header search triggers to open the palette programmatically. */
 export const OPEN_SEARCH_EVENT = 'zn:open-search'
@@ -49,21 +52,32 @@ export function CommandPalette() {
   const [query, setQuery] = React.useState('')
   const [articles, setArticles] = React.useState<Article[]>([])
   const [loaded, setLoaded] = React.useState(false)
+  const [error, setError] = React.useState(false)
+  const pending = React.useRef(false)
   const [activeIndex, setActiveIndex] = React.useState(0)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   const load = React.useCallback(async () => {
-    if (loaded) return
+    if (pending.current) return
+    pending.current = true
+    setError(false)
     try {
-      const res = await fetch('/api/articles')
-      const data = (await res.json()) as { articles?: Article[] }
-      setArticles(data.articles ?? [])
-    } catch {
-      setArticles([])
-    } finally {
+      setArticles(await fetchArticleFeed())
       setLoaded(true)
+    } catch {
+      setError(true)
+    } finally {
+      pending.current = false
     }
-  }, [loaded])
+  }, [])
+
+  React.useEffect(() => {
+    if (!open) return
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void load()
+    }, 30_000)
+    return () => window.clearInterval(timer)
+  }, [open, load])
 
   const openPalette = React.useCallback(() => {
     setOpen(true)
@@ -124,7 +138,7 @@ export function CommandPalette() {
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIndex((i) => Math.min(i + 1, results.length - 1))
+      setActiveIndex((i) => Math.max(0, Math.min(i + 1, results.length - 1)))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setActiveIndex((i) => Math.max(i - 1, 0))
@@ -145,7 +159,12 @@ export function CommandPalette() {
         className='zn-cmdk-backdrop'
         onClick={() => setOpen(false)}
       />
-      <div className='zn-cmdk' role='dialog' aria-modal='true' aria-label='Търсене'>
+      <div
+        className='zn-cmdk'
+        role='dialog'
+        aria-modal='true'
+        aria-label='Търсене'
+      >
         <div className='zn-cmdk-input-row'>
           <SearchIcon />
           <input
@@ -163,8 +182,20 @@ export function CommandPalette() {
         </div>
 
         <div className='zn-cmdk-list'>
-          {!loaded && <div className='zn-cmdk-empty'>Зареждане…</div>}
-          {loaded && results.length === 0 && (
+          {!loaded && !error && (
+            <div className='zn-cmdk-empty'>
+              <ContentSkeleton />
+            </div>
+          )}
+          {error && (
+            <div className='zn-cmdk-empty' role='status'>
+              Търсенето временно не е достъпно.{' '}
+              <button type='button' onClick={() => void load()}>
+                Опитай отново
+              </button>
+            </div>
+          )}
+          {loaded && !error && results.length === 0 && (
             <div className='zn-cmdk-empty'>
               {query ? 'Няма съвпадения' : 'Започни да пишеш…'}
             </div>

@@ -1,3 +1,5 @@
+import { getPageProperty, parsePageId } from 'notion-utils'
+
 import { getNotionBlockValue } from './get-notion-block-value'
 import { type PageProps } from './types'
 
@@ -24,8 +26,7 @@ export async function pageAcl({
     }
   }
 
-  const keys = Object.keys(recordMap.block)
-  const rootKey = keys[0]
+  const rootKey = pageId ? (parsePageId(pageId) ?? pageId) : undefined
 
   if (!rootKey) {
     return {
@@ -37,19 +38,23 @@ export async function pageAcl({
   }
 
   const rootBlock = getNotionBlockValue(recordMap.block[rootKey])
-  const rootSpaceId = rootBlock?.space_id
+  if (
+    !rootBlock ||
+    getPageProperty<boolean | null>('Public', rootBlock, recordMap) === false
+  ) {
+    return { error: { statusCode: 404, message: 'Page is not public' } }
+  }
+  const rootSpaceId = rootBlock.space_id
 
   if (
     rootSpaceId &&
     site.rootNotionSpaceId &&
     rootSpaceId !== site.rootNotionSpaceId
   ) {
-    if (process.env.NODE_ENV) {
-      return {
-        error: {
-          statusCode: 404,
-          message: `Notion page "${pageId}" doesn't belong to the Notion workspace owned by "${site.domain}".`
-        }
+    return {
+      error: {
+        statusCode: 404,
+        message: `Notion page "${pageId}" doesn't belong to the Notion workspace owned by "${site.domain}".`
       }
     }
   }

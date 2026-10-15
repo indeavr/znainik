@@ -1,3 +1,4 @@
+import ExpiryMap from 'expiry-map'
 import ky from 'ky'
 import lqip from 'lqip-modern'
 import {
@@ -16,11 +17,14 @@ import { mapImageUrl } from './map-image-url'
 export async function getPreviewImageMap(
   recordMap: ExtendedRecordMap
 ): Promise<PreviewImageMap> {
-  const urls: string[] = getPageImageUrls(recordMap, {
-    mapImageUrl
-  })
-    .concat([defaultPageIcon, defaultPageCover].filter(Boolean))
-    .filter(Boolean)
+  // Blurs are optional: bound their cost so a slow image host cannot block ISR.
+  const urls = [
+    ...new Set(
+      getPageImageUrls(recordMap, { mapImageUrl })
+        .concat([defaultPageIcon, defaultPageCover].filter(Boolean))
+        .filter((url) => /^https?:\/\//.test(url))
+    )
+  ].slice(0, 12)
 
   const previewImagesMap = Object.fromEntries(
     await pMap(
@@ -30,7 +34,7 @@ export async function getPreviewImageMap(
         return [cacheKey, await getPreviewImage(url, { cacheKey })]
       },
       {
-        concurrency: 8
+        concurrency: 4
       }
     )
   )
@@ -53,9 +57,8 @@ async function createPreviewImage(
       console.warn(`redis error get "${cacheKey}"`, err.message)
     }
 
-    const body = await ky(url).arrayBuffer()
+    const body = await ky(url, { timeout: 3000, retry: 0 }).arrayBuffer()
     const result = await lqip(body)
-    console.log('lqip', { ...result.metadata, url, cacheKey })
 
     const previewImage = {
       originalWidth: result.metadata.originalWidth,
@@ -72,9 +75,15 @@ async function createPreviewImage(
 
     return previewImage
   } catch (err: any) {
-    console.warn('failed to create preview image', url, err.message)
+    console.warn(
+      'failed to create preview image',
+      new URL(url).hostname,
+      err.response?.status ?? err.name
+    )
     return null
   }
 }
 
-export const getPreviewImage = pMemoize(createPreviewImage)
+export const getPreviewImage = pMemoize(createPreviewImage, {
+  cache: new ExpiryMap(60_000)
+})

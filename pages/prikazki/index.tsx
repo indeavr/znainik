@@ -18,7 +18,7 @@ export const getStaticProps: GetStaticProps<PrikazkiIndexProps> = async () => {
 
   return {
     props: { tales },
-    revalidate: 300
+    revalidate: 60
   }
 }
 
@@ -39,9 +39,7 @@ export default function PrikazkiIndex({ tales }: PrikazkiIndexProps) {
           <h1 className='zn-hero-title'>
             Приказки, които <span className='zn-hero-gradient'>оживяват</span>
           </h1>
-          <p className='zn-hero-sub'>
-            Прелистай епизодите и опознай героите.
-          </p>
+          <p className='zn-hero-sub'>Прелистай епизодите и опознай героите.</p>
         </section>
 
         <section className='zn-container zn-section'>

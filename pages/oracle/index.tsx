@@ -4,15 +4,9 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useState } from 'react'
 
-import { NotionPage } from '@/components/NotionPage'
-import { domain } from '@/lib/config'
-import {
-  getNotionBlockValue,
-  getNotionCollectionValue,
-  getNotionCollectionViewValue
-} from '@/lib/get-notion-block-value'
-import { resolveNotionPage } from '@/lib/resolve-notion-page'
-import { type PageProps } from '@/lib/types'
+import { getArticlesFromRecordMap } from '@/lib/get-articles'
+import { notion } from '@/lib/notion-api'
+import { withNotionRetry } from '@/lib/notion-retry'
 
 import styles from './oracle.module.css'
 
@@ -20,95 +14,41 @@ interface OracleCard {
   id: string
   title: string
   emoji: string
-  date: string
+  date: string | null
   description: string
 }
 
-export const getStaticProps: GetStaticProps<PageProps> = async () => {
-  try {
-    // Fetch the oracle Notion page data
-    console.log("OPA")
-    const props = await resolveNotionPage(domain, '19dd629f9cd280989eccfc6937f49bbb')
-    return { props, revalidate: 10 }
-  } catch (err) {
-    console.error('oracle page error', err)
-    throw err
-  }
+interface OracleProps {
+  cards: OracleCard[]
 }
 
-export default function OraclePage(props: PageProps) {
+export const getStaticProps: GetStaticProps<OracleProps> = async () => {
+  const pageId = '19dd629f9cd280989eccfc6937f49bbb'
+  const recordMap = await withNotionRetry(() =>
+    notion.getPage(pageId, {
+      concurrency: 1,
+      signFileUrls: false,
+      maxViewsPerCollection: 1,
+      throwOnCollectionErrors: true
+    })
+  )
+  const cards = getArticlesFromRecordMap(recordMap, pageId)
+    .slice(0, 64)
+    .map((article) => ({
+      id: article.pageId,
+      title: article.title,
+      emoji: article.emoji || '🔮',
+      date: article.date
+        ? new Date(article.date).toISOString().slice(0, 10)
+        : null,
+      description: article.description
+    }))
+  return { props: { cards }, revalidate: 60 }
+}
+
+export default function OraclePage({ cards: oracleCards }: OracleProps) {
   const [selectedCard, setSelectedCard] = useState<OracleCard | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  console.log("GG")
-  // Extract oracle cards from Notion data
-  const extractOracleCards = (): OracleCard[] => {
-    if (!props.recordMap?.collection) return []
-    
-    const cards: OracleCard[] = []
-    const collections = Object.values(props.recordMap.collection)
-    
-    for (const collection of collections) {
-      const coll = getNotionCollectionValue(collection)
-      if (!coll?.id) continue
-
-      const collectionId = coll.id
-
-      const collectionView = Object.values(
-        props.recordMap?.collection_view || {}
-      ).find((view) => {
-        const v = getNotionCollectionViewValue(view)
-        if (!v) return false
-        const withCollId = v as { collection_id?: string }
-        return (
-          withCollId.collection_id === collectionId || v.parent_id === collectionId
-        )
-      })
-
-      const viewUnwrapped = getNotionCollectionViewValue(collectionView)
-      if (viewUnwrapped && (viewUnwrapped as { page_sort?: string[] }).page_sort) {
-        const pageSort = (viewUnwrapped as { page_sort: string[] }).page_sort
-          for (const [index, pageId] of pageSort.entries()) {
-            const block = getNotionBlockValue(props.recordMap?.block?.[pageId])
-            if (block && block.type === 'page') {
-              const properties = block.properties as any || {}
-              
-              const title = properties.title?.[0]?.[0] || `Card ${index + 1}`
-                 const emoji = block.format?.page_icon || '🔮'
-                 const date = properties.date?.[0]?.[1]?.[0]?.[1]?.start_date || new Date().toISOString().split('T')[0]
-                 const description = properties.description?.[0]?.[0] || 'Медитирай върху тази карта'
-                 
-                 cards.push({
-                   id: pageId,
-                   title: typeof title === 'string' ? title : String(title),
-                   emoji: typeof emoji === 'string' ? emoji : String(emoji),
-                   date: typeof date === 'string' ? date : String(date),
-                   description: typeof description === 'string' ? description : String(description)
-                 })
-            }
-          }
-        }
-    }
-    
-    // If no cards found, generate placeholder cards
-    if (cards.length === 0) {
-      for (let i = 1; i <= 64; i++) {
-        const emojis: readonly string[] = ['🔮', '✨', '🌟', '💫', '🌙', '☯️', '🕯️', '🔯'] as const
-           const emojiIndex = (i - 1) % emojis.length
-           cards.push({
-              id: `card-${i}`,
-              title: `Карта ${i}`,
-              emoji: emojis[emojiIndex] || '🔮',
-              date: new Date().toISOString().split('T')[0] || '',
-              description: 'Медитирай върху тази карта'
-            })
-      }
-    }
-    
-    return cards.slice(0, 64) // Ensure exactly 64 cards
-  }
-
-  const oracleCards = extractOracleCards()
 
   const handleCardClick = (card: OracleCard) => {
     setSelectedCard(card)
@@ -117,22 +57,25 @@ export default function OraclePage(props: PageProps) {
 
   const closeModal = () => {
     setIsModalOpen(false)
-    setTimeout(() => setSelectedCard(null), 300)
+    setSelectedCard(null)
   }
 
   return (
     <div className={styles.container}>
       <Head>
         <title>Оракул | Знайник · Азайра</title>
-        <meta name="description" content="Галерия от 64 оракулски карти за медитация и съзерцание" />
-        <link rel="icon" href="/favicon.ico" />
+        <meta
+          name='description'
+          content='Галерия от 64 оракулски карти за медитация и съзерцание'
+        />
+        <link rel='icon' href='/favicon.ico' />
       </Head>
 
       <div className={styles.backgroundImage} />
       <div className={styles.backgroundGradient} />
 
       <nav className={styles.navigation}>
-        <Link href="/" className={styles.backLink}>
+        <Link href='/' className={styles.backLink}>
           ← Към Знайник
         </Link>
       </nav>
@@ -140,12 +83,18 @@ export default function OraclePage(props: PageProps) {
       <div className={styles.content}>
         <header className={styles.header}>
           <h1 className={styles.title}>Оракул</h1>
-          <p className={styles.subtitle}>Галерия от 64 карти за медитация и съзерцание</p>
+          <p className={styles.subtitle}>
+            Галерия от 64 карти за медитация и съзерцание
+          </p>
         </header>
 
+        {oracleCards.length === 0 && (
+          <p role='status'>Все още няма публикувани карти.</p>
+        )}
         <div className={styles.gallery}>
           {oracleCards.map((card, index) => (
-            <motion.div
+            <motion.button
+              type='button'
               key={card.id}
               className={styles.card}
               initial={{ opacity: 0, y: 20 }}
@@ -162,7 +111,7 @@ export default function OraclePage(props: PageProps) {
               <div className={styles.cardOverlay}>
                 <span>Виж карта</span>
               </div>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </div>
@@ -190,17 +139,14 @@ export default function OraclePage(props: PageProps) {
                 <div className={styles.modalEmoji}>{selectedCard.emoji}</div>
                 <h2 className={styles.modalTitle}>{selectedCard.title}</h2>
                 <p className={styles.modalDate}>{selectedCard.date}</p>
-                <p className={styles.modalDescription}>{selectedCard.description}</p>
+                <p className={styles.modalDescription}>
+                  {selectedCard.description}
+                </p>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Render the actual Notion page content if needed */}
-      <div style={{ display: 'none' }}>
-        <NotionPage {...props} />
-      </div>
     </div>
   )
 }
