@@ -4,7 +4,7 @@ import Image from 'next/legacy/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type PageBlock } from 'notion-types'
-import { formatDate, getBlockTitle, getPageProperty } from 'notion-utils'
+import { formatDate, getBlockTitle } from 'notion-utils'
 import * as React from 'react'
 import BodyClassName from 'react-body-classname'
 import {
@@ -23,6 +23,7 @@ import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import {
   formatBulgarianDate,
   getPageAuthorName,
+  getPageDescription,
   getPagePublishedTimestamp
 } from '@/lib/get-page-meta'
 import { mapImageUrl } from '@/lib/map-image-url'
@@ -199,7 +200,8 @@ export function NotionPage({
   site,
   recordMap,
   error,
-  pageId
+  pageId,
+  relatedArticles
 }: types.PageProps) {
   const router = useRouter()
   const lite = useSearchParam('lite')
@@ -285,6 +287,9 @@ export function NotionPage({
     return getAuthor(getPageAuthorName(block, recordMap))
   }, [isBlogPost, block, recordMap])
 
+  const canonicalPageUrl =
+    site && recordMap ? getCanonicalPageUrl(site, recordMap)(pageId) : undefined
+
   const footer = React.useMemo(() => {
     if (!isBlogPost) {
       return <Footer />
@@ -308,15 +313,25 @@ export function NotionPage({
         )}
 
         <hr className='zn-divider' />
-        <ShareButtons title={articleTitle || ''} />
+        <ShareButtons title={articleTitle || ''} url={canonicalPageUrl || ''} />
         {pageId && <CommentSection pageId={pageId} />}
         <AuthorCard author={author} />
-        {pageId && <RelatedPosts pageId={pageId} />}
+        {pageId && <RelatedPosts pageId={pageId} articles={relatedArticles} />}
         <Newsletter />
         <Footer />
       </>
     )
-  }, [isBlogPost, block, recordMap, readMinutes, publishedDate, pageId, author])
+  }, [
+    isBlogPost,
+    block,
+    recordMap,
+    readMinutes,
+    publishedDate,
+    pageId,
+    author,
+    relatedArticles,
+    canonicalPageUrl
+  ])
 
   if (router.isFallback) {
     return <Loading />
@@ -328,10 +343,6 @@ export function NotionPage({
 
   const title = getBlockTitle(block, recordMap) || site.name
 
-  const canonicalPageUrl = config.isDev
-    ? undefined
-    : getCanonicalPageUrl(site, recordMap)(pageId)
-
   // Use the Notion page cover image for previews. Ignore custom
   // "Social Image" property to ensure consistency with the article cover.
   const coverImage = mapImageUrl(
@@ -340,8 +351,7 @@ export function NotionPage({
   )
 
   const socialDescription =
-    getPageProperty<string>('Description', block, recordMap) ||
-    config.description
+    getPageDescription(block, recordMap) || config.description
 
   return (
     <>
@@ -353,12 +363,27 @@ export function NotionPage({
         image={coverImage}
         url={canonicalPageUrl}
         isBlogPost={isBlogPost}
+        authorName={author.name}
+        publishedTime={getPagePublishedTimestamp(block, recordMap)}
+        modifiedTime={block.last_edited_time}
       />
 
       {isLiteMode && <BodyClassName className='notion-lite' />}
       {darkModeForDom && <BodyClassName className='dark-mode' />}
 
       <NotionRenderer
+        header={
+          isBlogPost && (
+            <nav
+              className='zn-container zn-breadcrumb'
+              aria-label='Път до статията'
+            >
+              <Link href='/'>Начало</Link>
+              <span aria-hidden='true'> / </span>
+              <span>{title}</span>
+            </nav>
+          )
+        }
         bodyClassName={cs(
           styles.notion,
           pageId === site.rootNotionPageId && 'index-page'

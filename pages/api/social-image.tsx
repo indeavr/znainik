@@ -1,5 +1,4 @@
 import ky from 'ky'
-import { type NextApiRequest, type NextApiResponse } from 'next'
 import { ImageResponse } from 'next/og'
 import { type PageBlock } from 'notion-types'
 import {
@@ -21,10 +20,7 @@ import { type NotionPageInfo, type PageError } from '@/lib/types'
 
 export const runtime = 'edge'
 
-export default async function OGImage(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function OGImage(req: Request) {
   const { searchParams } = new URL(req.url!)
   const pageId = parsePageId(
     searchParams.get('id') || libConfig.rootNotionPageId
@@ -35,12 +31,12 @@ export default async function OGImage(
 
   const pageInfoOrError = await getNotionPageInfo({ pageId })
   if (pageInfoOrError.type === 'error') {
-    return res.status(pageInfoOrError.error.statusCode).send({
-      error: pageInfoOrError.error.message
-    })
+    return Response.json(
+      { error: pageInfoOrError.error.message },
+      { status: pageInfoOrError.error.statusCode }
+    )
   }
   const pageInfo = pageInfoOrError.data
-  console.log(pageInfo)
 
   return new ImageResponse(
     (
@@ -156,6 +152,9 @@ export default async function OGImage(
       </div>
     ),
     {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400'
+      },
       width: 1200,
       height: 630,
       fonts: [
@@ -178,7 +177,13 @@ export async function getNotionPageInfo({
   | { type: 'success'; data: NotionPageInfo }
   | { type: 'error'; error: PageError }
 > {
-  const recordMap = await notion.getPage(pageId)
+  // Preview images only need page metadata, not every body block or database view.
+  const recordMap = await notion.getPage(pageId, {
+    fetchMissingBlocks: false,
+    fetchCollections: false,
+    fetchRelationPages: false,
+    signFileUrls: false
+  })
   normalizeNotionApiRecordMap(recordMap)
 
   const keys = Object.keys(recordMap?.block || {})
@@ -233,8 +238,7 @@ export async function getNotionPageInfo({
     getCompatibleImageUrl(imageBlockUrl, imageFallbackUrl)
   ])
 
-  const author =
-    getPageAuthorName(block, recordMap) || libConfig.author
+  const author = getPageAuthorName(block, recordMap) || libConfig.author
 
   // const socialDescription =
   //   getPageProperty<string>('Description', block, recordMap) ||
@@ -284,7 +288,10 @@ async function isUrlReachable(
   }
 
   try {
-    await ky.head(url)
+    await ky.head(new URL(url, `https://${libConfig.domain}`), {
+      timeout: 3000,
+      retry: 0
+    })
     return true
   } catch {
     return false
@@ -298,7 +305,7 @@ async function getCompatibleImageUrl(
   const image = (await isUrlReachable(url)) ? url : fallbackUrl
 
   if (image) {
-    const imageUrl = new URL(image)
+    const imageUrl = new URL(image, `https://${libConfig.domain}`)
 
     if (imageUrl.host === 'images.unsplash.com') {
       if (!imageUrl.searchParams.has('w')) {
@@ -307,7 +314,8 @@ async function getCompatibleImageUrl(
         return imageUrl.toString()
       }
     }
+    return imageUrl.toString()
   }
 
-  return image ?? undefined
+  return undefined
 }

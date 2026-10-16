@@ -124,6 +124,7 @@ export default function TalePage({
   return (
     <div className='zn-page'>
       <PageHead
+        url={`https://${site.domain}/prikazki/${encodeURIComponent(tale.slug)}`}
         site={site}
         title={`${tale.title} — Приказки`}
         description={tale.intro}

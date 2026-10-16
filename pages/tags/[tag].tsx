@@ -77,6 +77,7 @@ export default function TagPage({ tag, articles }: TagPageProps) {
     <div className='zn-page'>
       <PageHead
         site={site}
+        url={`https://${site.domain}/tags/${tagToSlug(tag)}`}
         title={`${tag} · ${config.name}`}
         description={`Есенции по темата „${tag}“.`}
       />

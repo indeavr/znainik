@@ -31,7 +31,10 @@ export default class MyDocument extends Document {
           <link rel='apple-touch-icon' href={appIcon} />
           <link rel='apple-touch-icon' sizes='180x180' href={appIcon} />
 
-          <script src='https://t.contentsquare.net/uxa/9f0e11a01d357.js' />
+          <script
+            async
+            src='https://t.contentsquare.net/uxa/9f0e11a01d357.js'
+          />
         </Head>
 
         <body>

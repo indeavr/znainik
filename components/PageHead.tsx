@@ -1,8 +1,9 @@
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 
 import type * as types from '@/lib/types'
 import * as config from '@/lib/config'
-import { getSocialImageUrl } from '@/lib/get-social-image-url'
+import { canonicalUrl, isoDate, serializeJsonLd } from '@/lib/seo'
 
 /**
  * PageHead renders SEO-critical head tags for every page.
@@ -18,26 +19,54 @@ export function PageHead({
   pageId,
   image,
   url,
-  isBlogPost
+  isBlogPost,
+  authorName,
+  publishedTime,
+  modifiedTime,
+  noIndex = false
 }: types.PageProps & {
   title?: string
   description?: string
   image?: string
   url?: string
   isBlogPost?: boolean
+  authorName?: string
+  publishedTime?: number | null
+  modifiedTime?: number | null
+  noIndex?: boolean
 }) {
-  const rssFeedUrl = `${config.host}/feed`
+  const router = useRouter()
+  const origin = `https://${config.domain}`
+  const rssFeedUrl = `${origin}/feed`
+  const canonical = canonicalUrl(url || router.asPath || '/', origin)
+  const hidden =
+    noIndex ||
+    ['/404', '/_error'].includes(router.pathname) ||
+    process.env.NEXT_PUBLIC_DEPLOYMENT_ENV !== 'production'
 
-  title = title ?? site?.name
-  description = description ?? site?.description
+  title = title ?? site?.name ?? config.name
+  description = description ?? site?.description ?? config.description
+  const generatedImage = !image
+  const socialImageUrl = image
+    ? new URL(image, origin).toString()
+    : `${origin}/api/social-image?id=${pageId || config.rootNotionPageId}`
+  const datePublished = isoDate(publishedTime)
+  const dateModified = isoDate(modifiedTime)
 
-  // Prefer the provided page cover image from Notion. Only fall back
-  // to the generated social image if the cover is missing.
-  let socialImageUrl = image || getSocialImageUrl(pageId)
-  
-  // Ensure the image URL is absolute for social media crawlers
-  if (socialImageUrl && !socialImageUrl.startsWith('http')) {
-    socialImageUrl = `${config.host}${socialImageUrl.startsWith('/') ? '' : '/'}${socialImageUrl}`
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    '@id': `${canonical}#article`,
+    mainEntityOfPage: canonical,
+    url: canonical,
+    headline: title,
+    description,
+    inLanguage: 'bg',
+    datePublished,
+    dateModified,
+    author: { '@type': 'Person', name: authorName || config.author },
+    publisher: { '@type': 'Organization', name: config.name, url: origin },
+    image: socialImageUrl
   }
 
   return (
@@ -65,18 +94,21 @@ export function PageHead({
         key='theme-color-dark'
       />
 
-      <meta name='robots' content='index,follow' />
+      <meta
+        name='robots'
+        content={
+          hidden
+            ? 'noindex,follow'
+            : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'
+        }
+      />
       {/* Set the Open Graph type based on page context for better previews */}
       <meta property='og:type' content={isBlogPost ? 'article' : 'website'} />
       {/* Hint the page locale to scrapers for accurate title rendering */}
       <meta property='og:locale' content='bg_BG' />
 
-      {site && (
-        <>
-          <meta property='og:site_name' content={site.name} />
-          <meta property='twitter:domain' content={site.domain} />
-        </>
-      )}
+      <meta property='og:site_name' content={site?.name || config.name} />
+      <meta name='twitter:domain' content={config.domain} />
 
       {config.twitter && (
         <meta name='twitter:creator' content={`@${config.twitter}`} />
@@ -99,22 +131,23 @@ export function PageHead({
           {socialImageUrl.startsWith('https://') && (
             <meta property='og:image:secure_url' content={socialImageUrl} />
           )}
-          {/* Explicit image dimensions improve preview reliability across scrapers */}
-          <meta property='og:image:width' content='1200' />
-          <meta property='og:image:height' content='630' />
-          {/* Add image type for better compatibility */}
-          <meta property='og:image:type' content='image/jpeg' />
+          {generatedImage && <meta property='og:image:width' content='1200' />}
+          {generatedImage && <meta property='og:image:height' content='630' />}
+          {generatedImage && (
+            <meta property='og:image:type' content='image/png' />
+          )}
+          <meta name='twitter:image:alt' content={title} />
         </>
       ) : (
         <meta name='twitter:card' content='summary' />
       )}
 
-      {url && (
+      {!hidden && (
         <>
-          <link rel='canonical' href={url} />
-          <meta property='og:url' content={url} />
+          <link rel='canonical' href={canonical} />
+          <meta property='og:url' content={canonical} />
           {/* Twitter tags use `name` rather than `property` */}
-          <meta name='twitter:url' content={url} />
+          <meta name='twitter:url' content={canonical} />
         </>
       )}
 
@@ -131,25 +164,44 @@ export function PageHead({
       {socialImageUrl && <meta property='og:image:alt' content={title} />}
       <title>{title}</title>
 
-      {/* Better SEO for the blog posts */}
-      {isBlogPost && (
-        <script type='application/ld+json'>
-          {JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BlogPosting',
-            '@id': `${url}#BlogPosting`,
-            mainEntityOfPage: url,
-            url,
-            headline: title,
-            name: title,
-            description,
-            author: {
-              '@type': 'Person',
-              name: config.author
-            },
-            image: socialImageUrl
-          })}
-        </script>
+      {isBlogPost && datePublished && (
+        <meta property='article:published_time' content={datePublished} />
+      )}
+      {isBlogPost && dateModified && (
+        <meta property='article:modified_time' content={dateModified} />
+      )}
+      {isBlogPost && !hidden && (
+        <script
+          key='breadcrumb-schema'
+          type='application/ld+json'
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd({
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Начало',
+                  item: `${origin}/`
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: title,
+                  item: canonical
+                }
+              ]
+            })
+          }}
+        />
+      )}
+      {isBlogPost && !hidden && (
+        <script
+          key='article-schema'
+          type='application/ld+json'
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
+        />
       )}
     </Head>
   )

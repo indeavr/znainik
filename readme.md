@@ -257,3 +257,20 @@ card open/close; mobile image loading/no overflow; a changed ISR JSON response
 appearing without scroll loss; a failed response followed by recovery. Use
 controlled browser response fixtures for edits/errors rather than changing live
 Notion content during QA.
+
+### SEO и разпространение
+
+- Всички публични страници имат каноничен адрес на `https://znainik.azaira.bg`, без tracking параметри. Preview deployments и 404 са `noindex`; `VERCEL_ENV` се запазва при build като `NEXT_PUBLIC_DEPLOYMENT_ENV`. При self-hosted production build индексирането е разрешено.
+- Статиите имат `BlogPosting` и `BreadcrumbList` JSON-LD, реалния автор, известната дата на публикуване и `last_edited_time` от Notion. `Description` / `Описание` / `Резюме` / `Summary` / `Abstract` се използват за описание; при липса се извлича кратък откъс от първите текстови блокове. Свързаните статии са в първоначалния HTML.
+- `/sitemap.xml` включва статиите, темите, приказките и публичните инструменти. `lastmod` се подава само при известна дата на промяна. При грешка от Notion връща 503, вместо непълен списък с 200.
+- RSS е на `/feed`; `/feed.xml` пренасочва постоянно към него. GUID се основава на Notion ID и остава същият при промяна на slug. Не се измисля дата за недатирани статии. RSS е достъпен и от footer.
+- Facebook, X, LinkedIn, Telegram, копиране и системното споделяне използват каноничния адрес на текущата статия. Дублиращите `/dao/page` и `/dao/TaoTeChingOracle` пренасочват към `/dao`.
+
+След production deploy подай `https://znainik.azaira.bg/sitemap.xml` в Google Search Console и Bing Webmaster Tools от профил с потвърден достъп до сайта. Провери началната страница, една статия и една тема с URL Inspection и статията с Rich Results Test. Тези регистрации не се извършват от кода. Следи заявки, импресии, кликове и индексиране, преди да променяш заглавия според предполагаема популярност.
+
+За нова статия в Notion попълвай конкретно заглавие, самостоятелно резюме, действителен автор, дата на публикуване, подходящи теми и представителна корица поне 1200 px широка. Запазвай slug след публикуване; смяна без redirect губи старите входящи връзки. Добавяй източници към проверими твърдения и връзки към сродни есенции. За разпространение използвай кратък откъс с линк към оригинала в подходящ канал; RSS позволява абонамент и външни автоматизации.
+
+`max-image-preview:large` позволява големи изображения, но не гарантира показване в Discover. Основните SEO изисквания важат и за AI функциите на Google; не е нужен отделен AI файл или специална схема:
+[Article structured data](https://developers.google.com/search/docs/appearance/structured-data/article),
+[Discover](https://developers.google.com/search/docs/appearance/google-discover),
+[AI features](https://developers.google.com/search/docs/appearance/ai-features).

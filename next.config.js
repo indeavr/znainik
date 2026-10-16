@@ -23,6 +23,22 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
  */
 const createNextConfig = (phase) =>
   withBundleAnalyzer({
+    env: {
+      NEXT_PUBLIC_DEPLOYMENT_ENV:
+        env.VERCEL_ENV ||
+        (env.NODE_ENV === 'production' ? 'production' : 'development')
+    },
+    async redirects() {
+      return [
+        { source: '/feed.xml', destination: '/feed', permanent: true },
+        { source: '/dao/page', destination: '/dao', permanent: true },
+        {
+          source: '/dao/TaoTeChingOracle',
+          destination: '/dao',
+          permanent: true
+        }
+      ]
+    },
     staticPageGenerationTimeout: 300,
     experimental: { cpus: 1, staticGenerationMaxConcurrency: 1 },
     // Use a writable distDir in development to avoid local permission issues,

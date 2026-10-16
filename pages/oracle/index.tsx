@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { type GetStaticProps } from 'next'
-import Head from 'next/head'
 import Link from 'next/link'
 import { useState } from 'react'
 
+import { PageHead } from '@/components/PageHead'
 import { getArticlesFromRecordMap } from '@/lib/get-articles'
 import { notion } from '@/lib/notion-api'
 import { withNotionRetry } from '@/lib/notion-retry'
@@ -62,14 +62,10 @@ export default function OraclePage({ cards: oracleCards }: OracleProps) {
 
   return (
     <div className={styles.container}>
-      <Head>
-        <title>Оракул | Знайник · Азайра</title>
-        <meta
-          name='description'
-          content='Галерия от 64 оракулски карти за медитация и съзерцание'
-        />
-        <link rel='icon' href='/favicon.ico' />
-      </Head>
+      <PageHead
+        title='Оракул | Знайник · Азайра'
+        description='Изтегли карта от оракула на Знайник и открий есенция за размисъл и вдъхновение.'
+      />
 
       <div className={styles.backgroundImage} />
       <div className={styles.backgroundGradient} />

@@ -2,6 +2,8 @@ import { type ParsedUrlQuery } from 'node:querystring'
 
 import { type ExtendedRecordMap, type PageMap } from 'notion-types'
 
+import { type Article } from './get-articles'
+
 export * from 'notion-types'
 
 export type NavigationStyle = 'default' | 'custom'
@@ -12,6 +14,7 @@ export interface PageError {
 }
 
 export interface PageProps {
+  relatedArticles?: Article[]
   site?: Site
   recordMap?: ExtendedRecordMap
   pageId?: string

@@ -1527,3 +1527,14 @@
     width: 100%;
   }
 }
+
+.zn-breadcrumb {
+  padding-block: 1rem;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.zn-breadcrumb a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

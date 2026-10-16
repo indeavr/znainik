@@ -18,6 +18,7 @@ import {
   getTagCounts,
   sortFeaturedArticles
 } from '@/lib/get-articles'
+import { serializeJsonLd } from '@/lib/seo'
 
 interface HomeProps {
   articles: Article[]
@@ -40,10 +41,9 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
 }
 
 export default function HomePage({ articles, tags }: HomeProps) {
-  const featured = sortFeaturedArticles(articles.filter((a) => a.featured)).slice(
-    0,
-    3
-  )
+  const featured = sortFeaturedArticles(
+    articles.filter((a) => a.featured)
+  ).slice(0, 3)
 
   const websiteJsonLd = {
     '@context': 'https://schema.org',
@@ -51,20 +51,19 @@ export default function HomePage({ articles, tags }: HomeProps) {
     name: config.name,
     url: `https://${site.domain}`,
     description: config.description,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `https://${site.domain}/tags/{search_term_string}`,
-      'query-input': 'required name=search_term_string'
-    }
+    inLanguage: 'bg'
   }
 
   return (
     <div className='zn-page'>
-      <PageHead site={site} title={config.name} description={config.description} />
+      <PageHead
+        site={site}
+        title={config.name}
+        description={config.description}
+      />
       <script
         type='application/ld+json'
-         
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }}
       />
 
       <SiteHeader active='home' />
@@ -109,7 +108,9 @@ export default function HomePage({ articles, tags }: HomeProps) {
               <BrandLogo variant='lockup' />
             </span>
             <span className='zn-story-banner-body'>
-              <span className='zn-story-banner-eyebrow'>Нова приказка-игра</span>
+              <span className='zn-story-banner-eyebrow'>
+                Нова приказка-игра
+              </span>
               <span className='zn-story-banner-title'>
                 Влез в интерактивните Приказки
               </span>
@@ -179,7 +180,13 @@ export default function HomePage({ articles, tags }: HomeProps) {
 
 function SearchIcon() {
   return (
-    <svg width='20' height='20' viewBox='0 0 24 24' fill='none' aria-hidden='true'>
+    <svg
+      width='20'
+      height='20'
+      viewBox='0 0 24 24'
+      fill='none'
+      aria-hidden='true'
+    >
       <circle cx='11' cy='11' r='7' stroke='currentColor' strokeWidth='2' />
       <path
         d='M21 21l-4.3-4.3'

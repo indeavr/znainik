@@ -1,19 +1,21 @@
 import { FaFacebookF } from '@react-icons/all-files/fa/FaFacebookF'
 import { FaLink } from '@react-icons/all-files/fa/FaLink'
 import { FaLinkedinIn } from '@react-icons/all-files/fa/FaLinkedinIn'
+import { FaShareAlt } from '@react-icons/all-files/fa/FaShareAlt'
+import { FaTelegramPlane } from '@react-icons/all-files/fa/FaTelegramPlane'
 import { FaTwitter } from '@react-icons/all-files/fa/FaTwitter'
 import * as React from 'react'
 
 /**
- * Social share row for articles. Resolves the canonical URL on the client and
- * supports a native copy-to-clipboard fallback.
+ * Stable canonical links also work before hydration; native share is opt-in.
  */
-export function ShareButtons({ title }: { title: string }) {
-  const [url, setUrl] = React.useState('')
+export function ShareButtons({ title, url }: { title: string; url: string }) {
+  const [canShare, setCanShare] = React.useState(false)
+  const [failed, setFailed] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
 
   React.useEffect(() => {
-    setUrl(window.location.href)
+    setCanShare(typeof navigator.share === 'function')
   }, [])
 
   const enc = encodeURIComponent
@@ -21,11 +23,12 @@ export function ShareButtons({ title }: { title: string }) {
 
   const onCopy = React.useCallback(async () => {
     try {
+      setFailed(false)
       await navigator.clipboard.writeText(url)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
-      /* ignore */
+      setFailed(true)
     }
   }, [url])
 
@@ -60,6 +63,27 @@ export function ShareButtons({ title }: { title: string }) {
       >
         <FaLinkedinIn />
       </a>
+      <a
+        className='zn-share-btn'
+        href={`https://t.me/share/url?url=${enc(url)}&text=${shareText}`}
+        target='_blank'
+        rel='noopener noreferrer'
+        aria-label='Сподели в Telegram'
+      >
+        <FaTelegramPlane />
+      </a>
+      {canShare && (
+        <button
+          type='button'
+          className='zn-share-btn'
+          aria-label='Още начини за споделяне'
+          onClick={() => {
+            void navigator.share({ title, url }).catch(() => {})
+          }}
+        >
+          <FaShareAlt />
+        </button>
+      )}
       <button
         type='button'
         className='zn-share-btn'
@@ -69,8 +93,16 @@ export function ShareButtons({ title }: { title: string }) {
       >
         <FaLink />
       </button>
+      {failed && (
+        <span role='status'>
+          Копирай връзката: <a href={url}>{url}</a>
+        </span>
+      )}
       {copied && (
-        <span style={{ color: 'var(--brand-strong)', fontSize: '0.85rem' }}>
+        <span
+          role='status'
+          style={{ color: 'var(--brand-strong)', fontSize: '0.85rem' }}
+        >
           Копирано!
         </span>
       )}

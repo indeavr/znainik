@@ -13,7 +13,9 @@ export default siteConfig({
   author: 'MarDaRaTin',
 
   // open graph metadata (optional)
-  description: 'Библиотека с Есенции',
+  description:
+    'Есенции за осъзнат живот, творчество, образование и Дао. Открий статии, древни знания и интерактивни приказки в живата библиотека на Азайра.',
+  language: 'bg',
 
   // social usernames (optional)
   // twitter: 'indeavr',
@@ -56,7 +58,7 @@ export default siteConfig({
     {
       title: 'Азайра',
       url: 'https://azaira.bg'
-    },
+    }
     // {
     //   title: 'Contact',
     //   pageId: '6a29ebcb935a4f0689fe661ab5f3b8d1'

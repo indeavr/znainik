@@ -3,7 +3,9 @@ import { getBlockTitle, getPageProperty, idToUuid } from 'notion-utils'
 
 import { getCanonicalPageId } from './get-canonical-page-id'
 import { getNotionBlockValue } from './get-notion-block-value'
+import { getPageAuthorName, getPagePublishedTimestamp } from './get-page-meta'
 import { mapImageUrl } from './map-image-url'
+import { isoDate } from './seo'
 
 /** A single "Есенция" (article) distilled from the root collection. */
 export interface Article {
@@ -15,6 +17,8 @@ export interface Article {
   emoji: string | null
   /** Unix epoch (ms) used for ordering; null when no date property exists. */
   date: number | null
+  modified?: number | null
+  author?: string | null
   /** Manual sort rank from Notion; higher = closer to the top. */
   order: number | null
   tags: string[]
@@ -22,8 +26,13 @@ export interface Article {
 }
 
 // Property name candidates (the Notion DB may use Bulgarian or English labels).
-const DESCRIPTION_PROPS = ['Description', 'Описание', 'Резюме', 'Summary', 'Abstract']
-const DATE_PROPS = ['Published', 'Date', 'Дата', 'Last Updated', 'Created']
+const DESCRIPTION_PROPS = [
+  'Description',
+  'Описание',
+  'Резюме',
+  'Summary',
+  'Abstract'
+]
 const TAG_PROPS = [
   'Tags',
   'Tag',
@@ -51,20 +60,6 @@ function firstStringProperty(
   return ''
 }
 
-function firstDateProperty(
-  names: string[],
-  block: Block,
-  recordMap: ExtendedRecordMap
-): number | null {
-  for (const name of names) {
-    const value = getPageProperty<number>(name, block, recordMap)
-    if (value) {
-      return value
-    }
-  }
-  return null
-}
-
 function parseNumericProperty(value: unknown): number | null {
   if (value == null || value === '') return null
   if (typeof value === 'number' && !Number.isNaN(value)) return value
@@ -88,10 +83,7 @@ function firstNumberProperty(
   return null
 }
 
-function parseTags(
-  block: Block,
-  recordMap: ExtendedRecordMap
-): string[] {
+function parseTags(block: Block, recordMap: ExtendedRecordMap): string[] {
   for (const name of TAG_PROPS) {
     const value = getPageProperty<string | string[]>(name, block, recordMap)
     if (!value) continue
@@ -177,7 +169,7 @@ export function getArticlesFromRecordMap(
     if (!slug) continue
 
     const coverRaw = block.format?.page_cover
-    const cover = coverRaw ? mapImageUrl(coverRaw, block) ?? null : null
+    const cover = coverRaw ? (mapImageUrl(coverRaw, block) ?? null) : null
 
     const iconRaw = block.format?.page_icon
     const emoji =
@@ -192,7 +184,9 @@ export function getArticlesFromRecordMap(
       description: firstStringProperty(DESCRIPTION_PROPS, block, recordMap),
       cover,
       emoji,
-      date: firstDateProperty(DATE_PROPS, block, recordMap),
+      date: getPagePublishedTimestamp(block, recordMap),
+      modified: isoDate(block.last_edited_time) ? block.last_edited_time : null,
+      author: getPageAuthorName(block, recordMap) ?? null,
       order: firstNumberProperty(ORDER_PROPS, block, recordMap),
       tags: parseTags(block, recordMap),
       featured: isFeatured(block, recordMap)

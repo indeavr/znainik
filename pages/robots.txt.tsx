@@ -1,9 +1,10 @@
 import type { GetServerSideProps } from 'next'
 
-import { host } from '@/lib/config'
+import { domain } from '@/lib/config'
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  if (req.method !== 'GET') {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD')
     res.statusCode = 405
     res.setHeader('Content-Type', 'application/json')
     res.write(JSON.stringify({ error: 'method not allowed' }))
@@ -14,24 +15,24 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     }
   }
 
-  // cache for up to one day
-  res.setHeader('Cache-Control', 'public, max-age=86400, immutable')
-  res.setHeader('Content-Type', 'text/plain')
+  // Keep crawler directives fresh across deployment changes.
+  res.setHeader('Cache-Control', 'public, max-age=3600')
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
 
   // only allow the site to be crawlable on the production deployment
-  if (process.env.VERCEL_ENV === 'production') {
+  if (process.env.NEXT_PUBLIC_DEPLOYMENT_ENV === 'production') {
     res.write(`User-agent: *
 Allow: /
-Disallow: /api/get-tweet-ast/*
-Disallow: /api/search-notion
+Disallow: /api/
+Allow: /api/social-image
 
-Sitemap: ${host}/sitemap.xml
+Sitemap: https://${domain}/sitemap.xml
 `)
   } else {
     res.write(`User-agent: *
 Disallow: /
 
-Sitemap: ${host}/sitemap.xml
+Sitemap: https://${domain}/sitemap.xml
 `)
   }
 

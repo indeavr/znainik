@@ -4,6 +4,7 @@ import { parsePageId } from 'notion-utils'
 import { includeNotionIdInUrls } from './config'
 import { getCanonicalPageId } from './get-canonical-page-id'
 import { safeUuidToId } from './safe-notion-id'
+import { canonicalUrl } from './seo'
 import { type Site } from './types'
 
 // include UUIDs in page URLs during local development but not in production
@@ -36,10 +37,11 @@ export const getCanonicalPageUrl =
     if (safeUuidToId(pageUuid) === site.rootNotionPageId) {
       return `https://${site.domain}`
     }
-    const canonical = getCanonicalPageId(pageUuid, recordMap, { uuid })
-    return canonical
-      ? `https://${site.domain}/${canonical}`
-      : `https://${site.domain}`
+    const canonical = getCanonicalPageId(pageUuid, recordMap, { uuid: false })
+    return canonicalUrl(
+      canonical ? `/${canonical}` : '/',
+      `https://${site.domain}`
+    )
   }
 
 function createUrl(path: string, searchParams: URLSearchParams) {

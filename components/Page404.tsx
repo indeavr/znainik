@@ -8,7 +8,7 @@ export function Page404({ site, pageId, error }: types.PageProps) {
 
   return (
     <>
-      <PageHead site={site} title={title} />
+      <PageHead site={site} title={title} noIndex />
 
       <div className={styles.container}>
         <main className={styles.main}>

@@ -1,65 +1,38 @@
 import type { GetServerSideProps } from 'next'
-import RSS from 'rss'
 
 import { loadArticles } from '@/lib/article-catalog'
 import * as config from '@/lib/config'
-import { getSocialImageUrl } from '@/lib/get-social-image-url'
+import { createArticleFeed } from '@/lib/rss-feed'
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  if (req.method !== 'GET') {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.statusCode = 405
-    res.setHeader('Content-Type', 'application/json')
-    res.write(JSON.stringify({ error: 'method not allowed' }))
+    res.setHeader('Allow', 'GET, HEAD')
     res.end()
     return { props: {} }
   }
-
-  const articles = await loadArticles()
-  const ttlMinutes = 30
-  const ttlSeconds = ttlMinutes * 60
-
-  const feed = new RSS({
-    title: config.name,
-    site_url: config.host,
-    feed_url: `${config.host}/feed.xml`,
-    language: config.language,
-    ttl: ttlMinutes
-  })
-
-  for (const article of articles) {
-    const title = article.title || config.name
-    const description = article.description || config.description
-    const url = `${config.host}/${encodeURI(article.slug)}`
-    const date = article.date ? new Date(article.date) : new Date()
-    const socialImageUrl = getSocialImageUrl(article.pageId)
-
-    feed.item({
-      title,
-      url,
-      date,
-      description,
-      enclosure: socialImageUrl
-        ? {
-            url: socialImageUrl,
-            type: 'image/jpeg'
-          }
-        : undefined
+  try {
+    const articles = await loadArticles()
+    const xml = createArticleFeed(articles, {
+      ...config,
+      origin: `https://${config.domain}`
     })
+    res.setHeader(
+      'Cache-Control',
+      'public, s-maxage=1800, stale-while-revalidate=1800'
+    )
+    res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8')
+    res.end(req.method === 'HEAD' ? undefined : xml)
+  } catch (err) {
+    console.error('feed: unavailable', err)
+    res.statusCode = 503
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('Retry-After', '60')
+    res.end()
   }
-
-  const feedText = feed.xml({ indent: true })
-
-  res.setHeader(
-    'Cache-Control',
-    `public, max-age=${ttlSeconds}, stale-while-revalidate=${ttlSeconds}`
-  )
-  res.setHeader('Content-Type', 'text/xml; charset=utf-8')
-  res.write(feedText)
-  res.end()
-
   return { props: {} }
 }
 
-export default function noop() {
+export default function Feed() {
   return null
 }
