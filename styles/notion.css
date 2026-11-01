@@ -530,12 +530,199 @@ html {
 .notion-aside-table-of-contents-header::before {
   content: 'Съдържание';
   display: block;
-  font-size: 1.1em;
+  font-size: 14px;
   font-weight: 400;
   line-height: normal;
   text-transform: uppercase;
   word-break: break-word;
   color: var(--fg-color);
+}
+
+/* Article reading layout: the title, metadata and body share one measure. */
+.zn-article {
+  --article-muted: #68636e;
+  width: calc(720px + var(--page-padding-left) + var(--page-padding-right));
+  max-width: 100%;
+  font-size: clamp(17px, 1.25vw, 18px);
+}
+
+.dark-mode .zn-article {
+  --article-muted: #b7b5bf;
+}
+
+.zn-article .notion-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.18;
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+
+.zn-article-header {
+  width: 100%;
+  margin-bottom: 24px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.zn-article-topics,
+.zn-article-byline {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.zn-article-topics {
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.zn-article-topics a {
+  padding: 7px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--fg-color);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.zn-article-topics a:hover {
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+.zn-article-byline {
+  gap: 6px 16px;
+  color: var(--article-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.zn-article-author {
+  font-weight: 600;
+  color: var(--fg-color);
+}
+
+.zn-article .notion-page-content {
+  width: 100%;
+}
+
+.zn-article .notion-page-content-inner {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  flex: 0 0 100%;
+  overflow-wrap: anywhere;
+}
+
+.zn-article .notion-text {
+  padding-block: 0.4em;
+  line-height: 1.8;
+}
+
+.zn-article :is(.notion-h1, .notion-h2, .notion-h3) {
+  line-height: 1.35;
+  margin-top: 1.7em;
+  margin-bottom: 0.5em;
+  text-wrap: balance;
+}
+
+.zn-article .notion-quote {
+  font-size: 1.1em;
+  line-height: 1.7;
+}
+
+.zn-article .notion-asset-caption {
+  color: var(--article-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.zn-article :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.zn-article-contents {
+  margin-top: 24px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.zn-article-contents summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.zn-article-contents nav {
+  padding: 0 8px 8px;
+}
+
+.zn-article-contents a {
+  display: block;
+  padding: 10px 12px;
+  line-height: 1.5;
+  border-radius: 6px;
+}
+
+.zn-article-contents a:hover {
+  background: var(--surface-soft);
+  color: var(--brand-strong);
+}
+
+@media (min-width: 1300px) and (min-height: 300px) {
+  .zn-article-contents {
+    display: none;
+  }
+
+  .zn-article .notion-aside {
+    flex: 0 0 208px;
+    width: 208px;
+    margin-left: 32px;
+    top: calc(var(--header-height) + 32px);
+    z-index: 1;
+    font-size: 14px;
+  }
+
+  .zn-article .notion-aside-table-of-contents {
+    min-width: 0;
+    max-height: calc(100dvh - var(--header-height) - 240px);
+    padding-left: 16px;
+    border-left: 1px solid var(--border-soft);
+    border-radius: 0;
+    scrollbar-width: thin;
+  }
+
+  .zn-article .notion-aside-table-of-contents-header::before {
+    padding-bottom: 12px;
+    color: var(--article-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+
+  .zn-article .notion-table-of-contents-item {
+    padding-block: 7px;
+    margin-top: 0;
+    color: var(--article-muted);
+    font-size: 13px;
+    opacity: 1;
+  }
+
+  .zn-article .notion-table-of-contents-item-body {
+    white-space: normal;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .zn-article .notion-table-of-contents-active-item {
+    color: var(--brand-strong) !important;
+    font-weight: 500;
+  }
 }
 
 .notion-table-of-contents-item {

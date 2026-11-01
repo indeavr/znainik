@@ -15,7 +15,7 @@ import {
   slugToTagMatcher,
   tagToSlug
 } from '@/lib/get-articles'
-import { getTagIcon } from '@/lib/tags'
+import { getLegacyTopic, getTagIcon } from '@/lib/tags'
 
 interface TagPageProps {
   tag: string
@@ -51,6 +51,15 @@ export const getStaticProps: GetStaticProps<TagPageProps, TagParams> = async (
   context
 ) => {
   const slug = context.params?.tag as string
+  const legacyTopic = getLegacyTopic(slug)
+  if (legacyTopic) {
+    return {
+      redirect: {
+        destination: `/tags/${tagToSlug(legacyTopic)}`,
+        permanent: true
+      }
+    }
+  }
 
   try {
     const articles = await loadArticles()

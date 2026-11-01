@@ -18,10 +18,8 @@ import { useSearchParam } from 'react-use'
 import type * as types from '@/lib/types'
 import { getAuthor } from '@/lib/authors'
 import * as config from '@/lib/config'
-import { estimateReadTimeMinutes } from '@/lib/estimate-read-time'
 import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import {
-  formatBulgarianDate,
   getPageAuthorName,
   getPageDescription,
   getPagePublishedTimestamp
@@ -31,6 +29,7 @@ import { getCanonicalPageUrl, mapPageUrl } from '@/lib/map-page-url'
 import { searchNotion } from '@/lib/search-notion'
 import { useDarkMode } from '@/lib/use-dark-mode'
 
+import { ArticleHeader } from './ArticleHeader'
 import { AuthorCard } from './AuthorCard'
 import { CommentSection } from './comments/CommentSection'
 import { Footer } from './Footer'
@@ -121,7 +120,19 @@ const Code = dynamic(() =>
 
 const Collection = dynamic(() =>
   import('react-notion-x/build/third-party/collection').then(
-    (m) => m.Collection
+    ({ Collection: NotionCollection }) => {
+      function ArticleCollection(
+        props: React.ComponentProps<typeof NotionCollection>
+      ) {
+        const { block, ctx } = props
+        if (block.type !== 'page' || block.parent_table !== 'collection') {
+          return <NotionCollection {...props} />
+        }
+
+        return <ArticleHeader block={block} recordMap={ctx.recordMap} />
+      }
+      return ArticleCollection
+    }
   )
 )
 const Equation = dynamic(() =>
@@ -265,21 +276,6 @@ export function NotionPage({
     [block, recordMap, isBlogPost]
   )
 
-  const readMinutes = React.useMemo(() => {
-    if (!isBlogPost || !block || !recordMap) return 0
-    try {
-      return estimateReadTimeMinutes(block, recordMap)
-    } catch {
-      return 0
-    }
-  }, [isBlogPost, block, recordMap])
-
-  const publishedDate = React.useMemo(() => {
-    if (!isBlogPost || !block || !recordMap) return null
-    const ts = getPagePublishedTimestamp(block, recordMap)
-    return ts ? formatBulgarianDate(ts) : null
-  }, [isBlogPost, block, recordMap])
-
   const author = React.useMemo(() => {
     if (!isBlogPost || !block || !recordMap) {
       return getAuthor(undefined)
@@ -300,18 +296,6 @@ export function NotionPage({
 
     return (
       <>
-        {(publishedDate || readMinutes > 0 || author.name) && (
-          <div className='zn-article-extras zn-meta-row'>
-            {publishedDate && <span>{publishedDate}</span>}
-            {publishedDate && author.name && <span className='zn-card-dot' />}
-            {author.name && <span>{author.name}</span>}
-            {(publishedDate || author.name) && readMinutes > 0 && (
-              <span className='zn-card-dot' />
-            )}
-            {readMinutes > 0 && <span>{readMinutes} мин четене</span>}
-          </div>
-        )}
-
         <hr className='zn-divider' />
         <ShareButtons title={articleTitle || ''} url={canonicalPageUrl || ''} />
         {pageId && <CommentSection pageId={pageId} />}
@@ -325,8 +309,6 @@ export function NotionPage({
     isBlogPost,
     block,
     recordMap,
-    readMinutes,
-    publishedDate,
     pageId,
     author,
     relatedArticles,
@@ -386,6 +368,7 @@ export function NotionPage({
         }
         bodyClassName={cs(
           styles.notion,
+          isBlogPost && 'zn-article',
           pageId === site.rootNotionPageId && 'index-page'
         )}
         darkMode={darkModeForDom}

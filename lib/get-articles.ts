@@ -83,7 +83,10 @@ function firstNumberProperty(
   return null
 }
 
-function parseTags(block: Block, recordMap: ExtendedRecordMap): string[] {
+export function getArticleTags(
+  block: Block,
+  recordMap: ExtendedRecordMap
+): string[] {
   for (const name of TAG_PROPS) {
     const value = getPageProperty<string | string[]>(name, block, recordMap)
     if (!value) continue
@@ -188,7 +191,7 @@ export function getArticlesFromRecordMap(
       modified: isoDate(block.last_edited_time) ? block.last_edited_time : null,
       author: getPageAuthorName(block, recordMap) ?? null,
       order: firstNumberProperty(ORDER_PROPS, block, recordMap),
-      tags: parseTags(block, recordMap),
+      tags: getArticleTags(block, recordMap),
       featured: isFeatured(block, recordMap)
     })
   }
