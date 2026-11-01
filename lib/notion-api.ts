@@ -13,6 +13,8 @@ import {
 } from './get-notion-block-value'
 import { normalizeNotionApiRecordMap } from './notion-record-map'
 
+let nextBuildRequestAt = 0
+
 /**
  * `www.notion.so/api/v3` answers 403/530 to server-side clients.
  * notion-client 8 defaults to `app.notion.com`. A custom base URL
@@ -38,6 +40,20 @@ type GetPageOptions = NonNullable<Parameters<NotionAPI['getPage']>[1]> & {
  * We normalize as soon as the record map exists (and after each block merge).
  */
 export class ZnainikNotionAPI extends NotionAPI {
+  override async fetch<T>(
+    params: Parameters<NotionAPI['fetch']>[0]
+  ): Promise<T> {
+    // Serial page generation still bursts through nested blocks, views and episodes.
+    // Pace build requests across all these readers without slowing live page loads.
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      const now = Date.now()
+      const wait = Math.max(0, nextBuildRequestAt - now)
+      nextBuildRequestAt = Math.max(now, nextBuildRequestAt) + 500
+      if (wait) await new Promise((resolve) => setTimeout(resolve, wait))
+    }
+    return super.fetch<T>(params)
+  }
+
   override async getPage(
     pageId: string,
     options?: GetPageOptions
