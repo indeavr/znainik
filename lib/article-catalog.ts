@@ -44,5 +44,8 @@ async function loadArticlesFresh(): Promise<Article[]> {
 }
 
 export const loadArticles = pMemoize(loadArticlesFresh, {
-  cache: new ExpiryMap(15_000)
+  // One catalogue snapshot per build; live publication checks retain the short TTL.
+  cache: new ExpiryMap(
+    process.env.NEXT_PHASE === 'phase-production-build' ? 1_800_000 : 15_000
+  )
 })
