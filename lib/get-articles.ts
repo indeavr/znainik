@@ -3,7 +3,11 @@ import { getBlockTitle, getPageProperty, idToUuid } from 'notion-utils'
 
 import { getCanonicalPageId } from './get-canonical-page-id'
 import { getNotionBlockValue } from './get-notion-block-value'
-import { getPageAuthorName, getPagePublishedTimestamp } from './get-page-meta'
+import {
+  getPageAuthorName,
+  getPageDescription,
+  getPagePublishedTimestamp
+} from './get-page-meta'
 import { mapImageUrl } from './map-image-url'
 import { isoDate } from './seo'
 
@@ -26,13 +30,6 @@ export interface Article {
 }
 
 // Property name candidates (the Notion DB may use Bulgarian or English labels).
-const DESCRIPTION_PROPS = [
-  'Description',
-  'Описание',
-  'Резюме',
-  'Summary',
-  'Abstract'
-]
 const TAG_PROPS = [
   'Tags',
   'Tag',
@@ -45,20 +42,6 @@ const TAG_PROPS = [
 ]
 const FEATURED_PROPS = ['Featured', 'Препоръчано', 'Избрано', 'Pinned']
 const ORDER_PROPS = ['Priority', 'Order', 'Ред', 'Приоритет', 'Rank', '#']
-
-function firstStringProperty(
-  names: string[],
-  block: Block,
-  recordMap: ExtendedRecordMap
-): string {
-  for (const name of names) {
-    const value = getPageProperty<string>(name, block, recordMap)
-    if (value && String(value).trim()) {
-      return String(value).trim()
-    }
-  }
-  return ''
-}
 
 function parseNumericProperty(value: unknown): number | null {
   if (value == null || value === '') return null
@@ -184,7 +167,7 @@ export function getArticlesFromRecordMap(
       pageId: block.id,
       slug,
       title,
-      description: firstStringProperty(DESCRIPTION_PROPS, block, recordMap),
+      description: getPageDescription(block, recordMap) ?? '',
       cover,
       emoji,
       date: getPagePublishedTimestamp(block, recordMap),

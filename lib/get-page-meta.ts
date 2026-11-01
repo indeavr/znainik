@@ -1,7 +1,7 @@
 import { type Block, type ExtendedRecordMap } from 'notion-types'
-import { getPageProperty, getTextContent } from 'notion-utils'
+import { getPageProperty } from 'notion-utils'
 
-import { getNotionBlockValue } from './get-notion-block-value'
+import { articleOpening } from './article-excerpt'
 import { isoDate } from './seo'
 
 const AUTHOR_PROPS = ['Author', 'Автор', 'Written by', 'Написал', 'Написано от']
@@ -60,14 +60,6 @@ export function getPageDescription(
     if (value && String(value).trim())
       return String(value).trim().replaceAll(/\s+/g, ' ')
   }
-  const paragraphs = (block.content ?? [])
-    .map((id) => getNotionBlockValue(recordMap.block[id]))
-    .filter((child) => child?.type === 'text')
-    .map((child) => getTextContent(child?.properties?.title))
-    .filter(Boolean)
-  const text = paragraphs.join(' ').replaceAll(/\s+/g, ' ').trim()
-  if (!text) return undefined
-  return text.length <= 180
-    ? text
-    : `${text.slice(0, 177).replace(/\s+\S*$/, '')}…`
+  const opening = articleOpening(block, recordMap)
+  return opening.missing.length ? undefined : opening.excerpt || undefined
 }

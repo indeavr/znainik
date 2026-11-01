@@ -1,6 +1,7 @@
 import ExpiryMap from 'expiry-map'
 import pMemoize from 'p-memoize'
 
+import { withArticleExcerpts } from './article-catalog-excerpts'
 import { rootNotionPageId } from './config'
 import { type Article, getArticlesFromRecordMap } from './get-articles'
 import { notion } from './notion-api'
@@ -36,7 +37,10 @@ async function loadArticlesFresh(): Promise<Article[]> {
     )
   }
 
-  return articles
+  return withArticleExcerpts(articles, recordMap, async (ids) => {
+    const result = await withNotionRetry(() => notion.getBlocks(ids))
+    return result.recordMap.block
+  })
 }
 
 export const loadArticles = pMemoize(loadArticlesFresh, {
