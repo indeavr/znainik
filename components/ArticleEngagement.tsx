@@ -15,156 +15,194 @@ function formatCount(n: number): string {
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`)
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json() as Promise<T>
 }
 
 type LikeResponse = {
-  likes?: number
-  userLikes?: number
-  maxLikes?: number
-  added?: boolean
-  persisted?: boolean
+  likes: number
+  userLikes: number
 }
-type ViewResponse = { views?: number; persisted?: boolean }
+type ViewResponse = { views: number }
 
-/**
- * Engagement rail: claps (up to 13 per visitor, no unlike) + views.
- */
+/** A new article gets its own state, including any pending requests. */
 export function ArticleEngagement({ pageId }: { pageId: string }) {
+  const id = normalizeEngagementPageId(pageId)
+  return id ? <EngagementCounts key={id} pageId={id} /> : null
+}
+
+function EngagementCounts({ pageId }: { pageId: string }) {
   const [likes, setLikes] = React.useState<number | null>(null)
   const [userLikes, setUserLikes] = React.useState(0)
   const [views, setViews] = React.useState<number | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [loadingViews, setLoadingViews] = React.useState(true)
+  const [saving, setSaving] = React.useState(false)
   const [bump, setBump] = React.useState(false)
-  const [storageWarning, setStorageWarning] = React.useState(false)
-
-  const normalizedId = React.useMemo(
-    () => normalizeEngagementPageId(pageId),
-    [pageId]
-  )
-
+  const [error, setError] = React.useState('')
+  const [loadAttempt, setLoadAttempt] = React.useState(0)
+  const pending = React.useRef(false)
+  const mutation = React.useRef<AbortController | null>(null)
+  const statusId = React.useId()
   const atMax = userLikes >= MAX_LIKES_PER_VISITOR
 
   React.useEffect(() => {
-    if (!normalizedId) return
-
-    let cancelled = false
-    const visitor = getOrCreateVisitorId()
-    if (!visitor) return
+    const controller = new AbortController()
+    const { signal } = controller
 
     async function loadEngagement() {
+      setLoading(true)
+      setLoadingViews(true)
+      setError('')
       try {
-        const [likeData, viewData] = await Promise.all([
+        const visitor = getOrCreateVisitorId()
+        await Promise.allSettled([
           fetchJson<LikeResponse>(
-            `/api/likes?id=${encodeURIComponent(normalizedId)}&visitor=${encodeURIComponent(visitor)}`
-          ),
+            `/api/likes?id=${encodeURIComponent(pageId)}&visitor=${encodeURIComponent(visitor)}`,
+            { signal }
+          )
+            .then((data) => {
+              if (signal.aborted) return
+              setLikes(data.likes)
+              setUserLikes(data.userLikes)
+            })
+            .catch(() => {
+              if (!signal.aborted)
+                setError('Харесванията не се заредиха. Опитай отново.')
+            })
+            .finally(() => {
+              if (!signal.aborted) setLoading(false)
+            }),
           fetchJson<ViewResponse>('/api/views', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: normalizedId, visitor })
+            body: JSON.stringify({ id: pageId, visitor }),
+            signal
           })
+            .then((data) => {
+              if (!signal.aborted) setViews(data.views)
+            })
+            .finally(() => {
+              if (!signal.aborted) setLoadingViews(false)
+            })
         ])
-
-        if (cancelled) return
-        setLikes(likeData.likes ?? 0)
-        setUserLikes(likeData.userLikes ?? 0)
-        setViews(viewData.views ?? 0)
-        if (likeData.persisted === false || viewData.persisted === false) {
-          setStorageWarning(true)
-        }
       } catch {
-        if (!cancelled) {
-          setLikes(0)
-          setViews(0)
+        if (!signal.aborted) setError('Броячите не се заредиха. Опитай отново.')
+      } finally {
+        if (!signal.aborted) {
+          setLoading(false)
+          setLoadingViews(false)
         }
       }
     }
 
     void loadEngagement()
+    return () => controller.abort()
+  }, [pageId, loadAttempt])
 
-    return () => {
-      cancelled = true
+  React.useEffect(() => () => mutation.current?.abort(), [])
+
+  const onAddLike = async () => {
+    if (atMax || loading || pending.current) return
+    if (likes === null) {
+      setLoadAttempt((attempt) => attempt + 1)
+      return
     }
-  }, [normalizedId])
 
-  const onAddLike = React.useCallback(async () => {
-    if (atMax) return
-
-    const visitor = getOrCreateVisitorId()
-    if (!visitor) return
-
-    setUserLikes((prev) => prev + 1)
-    setLikes((prev) => (prev ?? 0) + 1)
+    pending.current = true
+    setSaving(true)
+    setError('')
+    setLikes(likes + 1)
+    setUserLikes(userLikes + 1)
     setBump(true)
-    window.setTimeout(() => setBump(false), 320)
+    const controller = new AbortController()
+    mutation.current = controller
 
     try {
       const data = await fetchJson<LikeResponse>('/api/likes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: normalizedId, visitor })
+        body: JSON.stringify({ id: pageId, visitor: getOrCreateVisitorId() }),
+        signal: controller.signal
       })
-      if (typeof data.likes === 'number') setLikes(data.likes)
-      if (typeof data.userLikes === 'number') setUserLikes(data.userLikes)
-      if (data.added === false) {
-        setUserLikes(data.userLikes ?? MAX_LIKES_PER_VISITOR)
-        setLikes(data.likes ?? 0)
-      }
+      if (controller.signal.aborted) return
+      setLikes(data.likes)
+      setUserLikes(data.userLikes)
     } catch {
-      setUserLikes((prev) => Math.max(0, prev - 1))
-      setLikes((prev) => Math.max(0, (prev ?? 1) - 1))
+      if (controller.signal.aborted) return
+      setLikes(likes)
+      setUserLikes(userLikes)
+      setError('Харесването не се запази. Опитай отново.')
+    } finally {
+      if (!controller.signal.aborted) {
+        pending.current = false
+        setSaving(false)
+      }
     }
-  }, [atMax, normalizedId])
+  }
 
-  const hasClapped = userLikes > 0
+  const likeLabel = loading
+    ? 'Зареждане на харесванията'
+    : likes === null
+      ? 'Зареди харесванията отново'
+      : atMax
+        ? `Дадохте ${MAX_LIKES_PER_VISITOR} харесвания`
+        : userLikes > 0
+          ? `Харесай отново (${userLikes}/${MAX_LIKES_PER_VISITOR})`
+          : 'Харесай статията'
+  const viewsLabel =
+    views === null
+      ? loadingViews
+        ? 'Зареждане на преглежданията'
+        : 'Преглежданията са временно недостъпни'
+      : `${views.toLocaleString('bg-BG')} преглеждания`
 
   return (
-    <div className='zn-engage'>
-      <button
-        type='button'
-        className={cs(
-          'zn-engage-btn',
-          hasClapped && 'is-liked',
-          bump && 'is-bump',
-          atMax && 'is-maxed'
-        )}
-        onClick={onAddLike}
-        disabled={atMax}
-        aria-label={
-          atMax
-            ? `Дадохте ${MAX_LIKES_PER_VISITOR} харесвания`
-            : hasClapped
-              ? `Харесай отново (${userLikes}/${MAX_LIKES_PER_VISITOR})`
-              : 'Хареса ми'
-        }
-        title={
-          atMax
-            ? `Максимум ${MAX_LIKES_PER_VISITOR} харесвания`
-            : `Харесай (${userLikes}/${MAX_LIKES_PER_VISITOR})`
-        }
-      >
-        {hasClapped ? <IoHeart /> : <IoHeartOutline />}
-      </button>
-      <span className='zn-engage-count'>
-        {likes === null ? '·' : formatCount(likes)}
-      </span>
-
-      <span className='zn-engage-divider' aria-hidden='true' />
-
-      <span
-        className='zn-engage-views'
-        title={
-          storageWarning
-            ? 'Свържи Vercel Postgres (Neon) за постоянни броячи в production'
-            : 'Прочитания'
-        }
-      >
-        <IoEyeOutline />
-        <span className='zn-engage-count'>
-          {views === null ? '·' : formatCount(views)}
+    <div className='zn-engage' role='group' aria-label='Отзвук на статията'>
+      <div className='zn-engage-controls'>
+        <button
+          type='button'
+          className={cs(
+            'zn-engage-btn',
+            userLikes > 0 && 'is-liked',
+            atMax && 'is-maxed'
+          )}
+          onClick={onAddLike}
+          disabled={loading || saving || atMax}
+          aria-busy={loading || saving}
+          aria-label={likeLabel}
+          aria-describedby={statusId}
+          title={`${likeLabel}. До ${MAX_LIKES_PER_VISITOR} харесвания от читател.`}
+        >
+          <span
+            className={cs('zn-engage-heart', bump && 'is-bump')}
+            onAnimationEnd={() => setBump(false)}
+            aria-hidden='true'
+          >
+            {userLikes > 0 ? <IoHeart /> : <IoHeartOutline />}
+          </span>
+          <span className='zn-engage-count' aria-hidden='true'>
+            {likes === null ? '—' : formatCount(likes)}
+          </span>
+        </button>
+        <span className='zn-engage-divider' aria-hidden='true' />
+        <span className='zn-engage-views' title={viewsLabel}>
+          <IoEyeOutline aria-hidden='true' />
+          <span className='zn-engage-count' aria-hidden='true'>
+            {views === null ? '—' : formatCount(views)}
+          </span>
+          <span className='sr-only'>{viewsLabel}</span>
         </span>
+      </div>
+      <span
+        id={statusId}
+        role='status'
+        className={error ? 'zn-engage-error' : 'sr-only'}
+      >
+        {error ||
+          (likes !== null
+            ? `${likes.toLocaleString('bg-BG')} харесвания общо. Твоите: ${userLikes} от ${MAX_LIKES_PER_VISITOR}.`
+            : '')}
       </span>
     </div>
   )
