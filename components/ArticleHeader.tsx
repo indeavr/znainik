@@ -11,6 +11,8 @@ import {
   getPagePublishedTimestamp
 } from '@/lib/get-page-meta'
 
+import { ArticleEngagement } from './ArticleEngagement'
+
 /** Reader-facing metadata; editorial fields stay in Notion for ordering. */
 export function ArticleHeader({
   block,
@@ -48,6 +50,9 @@ export function ArticleHeader({
           {readMinutes > 0 && <span>{readMinutes} мин четене</span>}
         </div>
       )}
+      <div className='zn-article-engagement'>
+        <ArticleEngagement pageId={block.id} />
+      </div>
       {toc.length >= 3 && (
         <details ref={contents} className='zn-article-contents'>
           <summary>Съдържание</summary>

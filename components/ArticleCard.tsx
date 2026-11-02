@@ -1,3 +1,4 @@
+import cs from 'classnames'
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
@@ -17,21 +18,40 @@ function formatDate(date: number | null): string | null {
   }
 }
 
-export function ArticleCard({ article }: { article: Article }) {
+export function ArticleCard({
+  article,
+  variant = 'default',
+  priority = false
+}: {
+  article: Article
+  variant?: 'default' | 'lead' | 'compact' | 'catalog'
+  priority?: boolean
+}) {
   const date = formatDate(article.date)
   const [failedCover, setFailedCover] = React.useState<string | null>(null)
 
   return (
-    <Link href={`/${article.slug}`} className='zn-card' prefetch={false}>
+    <Link
+      href={`/${article.slug}`}
+      className={cs('zn-card', variant !== 'default' && `zn-card--${variant}`)}
+      prefetch={false}
+    >
       <div className='zn-card-cover'>
         {article.cover && failedCover !== article.cover ? (
           <Image
             src={article.cover}
-            alt={article.title}
+            alt=''
+            priority={priority}
             fill
             onError={() => setFailedCover(article.cover)}
             unoptimized={/\.gif(?:[?#]|$)/i.test(article.cover)}
-            sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px'
+            sizes={
+              variant === 'compact'
+                ? '120px'
+                : variant === 'catalog'
+                  ? '(max-width: 640px) 96px, (max-width: 1024px) 50vw, 400px'
+                  : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px'
+            }
           />
         ) : (
           <div className='zn-card-cover-fallback' aria-hidden='true'>
@@ -49,8 +69,15 @@ export function ArticleCard({ article }: { article: Article }) {
         <div className='zn-card-meta'>
           {article.tags[0] && <span>{article.tags[0]}</span>}
           {article.tags[0] && date && <span className='zn-card-dot' />}
-          {date && <span>{date}</span>}
+          {date && (
+            <time dateTime={new Date(article.date!).toISOString()}>{date}</time>
+          )}
         </div>
+        {variant === 'lead' && (
+          <span className='zn-card-read'>
+            Прочети статията <span aria-hidden='true'>↗</span>
+          </span>
+        )}
       </div>
     </Link>
   )

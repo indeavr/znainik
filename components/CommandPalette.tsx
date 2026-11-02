@@ -3,6 +3,7 @@ import * as React from 'react'
 
 import type { Article } from '@/lib/get-articles'
 import { fetchArticleFeed } from '@/lib/article-feed'
+import { searchArticles } from '@/lib/article-search'
 
 import { ContentSkeleton } from './ContentSkeleton'
 
@@ -15,35 +16,8 @@ export function openCommandPalette() {
   }
 }
 
-function normalize(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFKD')
-    .replaceAll(/[\u0300-\u036F]/g, '')
-}
-
-function scoreArticle(article: Article, query: string): number {
-  if (!query) return 1
-  const haystack = normalize(
-    `${article.title} ${article.description} ${article.tags.join(' ')}`
-  )
-  const needle = normalize(query)
-  if (haystack.includes(needle)) {
-    // earlier matches (esp. in title) rank higher
-    const titleHit = normalize(article.title).includes(needle)
-    return titleHit ? 100 - haystack.indexOf(needle) : 50
-  }
-  // fuzzy: every character appears in order
-  let i = 0
-  for (const ch of haystack) {
-    if (ch === needle[i]) i++
-    if (i === needle.length) return 10
-  }
-  return 0
-}
-
 /**
- * A ⌘K / Ctrl+K command palette that fuzzy-searches all articles instantly
+ * A ⌘K / Ctrl+K command palette that searches all articles by words and topics
  * (client-side over the cached /api/articles feed) and jumps to a page.
  */
 export function CommandPalette() {
@@ -56,6 +30,7 @@ export function CommandPalette() {
   const pending = React.useRef(false)
   const [activeIndex, setActiveIndex] = React.useState(0)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const dialogRef = React.useRef<HTMLDivElement>(null)
 
   const load = React.useCallback(async () => {
     if (pending.current) return
@@ -108,23 +83,42 @@ export function CommandPalette() {
   React.useEffect(() => {
     if (open) {
       setActiveIndex(0)
+      const previousFocus = document.activeElement as HTMLElement | null
+      const previousOverflow = document.body.style.overflow
       const id = window.setTimeout(() => inputRef.current?.focus(), 30)
       document.body.style.overflow = 'hidden'
+      function trapFocus(event: KeyboardEvent) {
+        if (event.key !== 'Tab') return
+        const controls = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'input, button, a[href]'
+          ) ?? []
+        )
+        const first = controls[0]
+        const last = controls.at(-1)
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last?.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first?.focus()
+        }
+      }
+      document.addEventListener('keydown', trapFocus)
       return () => {
         window.clearTimeout(id)
-        document.body.style.overflow = ''
+        document.removeEventListener('keydown', trapFocus)
+        document.body.style.overflow = previousOverflow
+        if (previousFocus?.isConnected)
+          previousFocus.focus({ preventScroll: true })
       }
     }
   }, [open])
 
-  const results = React.useMemo(() => {
-    return articles
-      .map((article) => ({ article, score: scoreArticle(article, query) }))
-      .filter((r) => r.score > 0)
-      .toSorted((a, b) => b.score - a.score)
-      .slice(0, 12)
-      .map((r) => r.article)
-  }, [articles, query])
+  const results = React.useMemo(
+    () => searchArticles(articles, query).slice(0, 12),
+    [articles, query]
+  )
 
   const go = React.useCallback(
     (article: Article) => {
@@ -144,7 +138,7 @@ export function CommandPalette() {
       setActiveIndex((i) => Math.max(i - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const article = results[activeIndex]
+      const article = results[Math.min(activeIndex, results.length - 1)]
       if (article) go(article)
     }
   }
@@ -155,11 +149,13 @@ export function CommandPalette() {
     <div className='zn-cmdk-overlay'>
       <button
         type='button'
+        tabIndex={-1}
         aria-label='Затвори търсенето'
         className='zn-cmdk-backdrop'
         onClick={() => setOpen(false)}
       />
       <div
+        ref={dialogRef}
         className='zn-cmdk'
         role='dialog'
         aria-modal='true'
@@ -170,7 +166,8 @@ export function CommandPalette() {
           <input
             ref={inputRef}
             className='zn-cmdk-input'
-            placeholder='Търси из Есенциите…'
+            placeholder='Търси по дума или тема…'
+            aria-label='Търси статии'
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -178,7 +175,14 @@ export function CommandPalette() {
             }}
             onKeyDown={onInputKeyDown}
           />
-          <span className='zn-kbd'>ESC</span>
+          <button
+            type='button'
+            className='zn-cmdk-close'
+            aria-label='Затвори търсенето'
+            onClick={() => setOpen(false)}
+          >
+            ×
+          </button>
         </div>
 
         <div className='zn-cmdk-list'>
@@ -200,28 +204,31 @@ export function CommandPalette() {
               {query ? 'Няма съвпадения' : 'Започни да пишеш…'}
             </div>
           )}
-          {results.map((article, index) => (
-            <button
-              type='button'
-              key={article.pageId}
-              className='zn-cmdk-item'
-              data-active={index === activeIndex}
-              onMouseEnter={() => setActiveIndex(index)}
-              onClick={() => go(article)}
-            >
-              <span className='zn-cmdk-item-emoji'>{article.emoji || '✦'}</span>
-              <span className='zn-cmdk-item-text'>
-                <div className='zn-cmdk-item-title'>{article.title}</div>
-                {(article.description || article.tags.length > 0) && (
-                  <div className='zn-cmdk-item-sub'>
-                    {article.tags.length > 0
-                      ? article.tags.join(' · ')
-                      : article.description}
-                  </div>
-                )}
-              </span>
-            </button>
-          ))}
+          {!error &&
+            results.map((article, index) => (
+              <button
+                type='button'
+                key={article.pageId}
+                className='zn-cmdk-item'
+                data-active={index === activeIndex}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => go(article)}
+              >
+                <span className='zn-cmdk-item-emoji'>
+                  {article.emoji || '✦'}
+                </span>
+                <span className='zn-cmdk-item-text'>
+                  <div className='zn-cmdk-item-title'>{article.title}</div>
+                  {(article.description || article.tags.length > 0) && (
+                    <div className='zn-cmdk-item-sub'>
+                      {article.tags.length > 0
+                        ? article.tags.join(' · ')
+                        : article.description}
+                    </div>
+                  )}
+                </span>
+              </button>
+            ))}
         </div>
 
         <div className='zn-cmdk-footer'>
