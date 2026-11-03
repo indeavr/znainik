@@ -4,7 +4,12 @@ import { loadArticles } from '@/lib/article-catalog'
 import { domain } from '@/lib/config'
 import { getTagCounts, tagToSlug } from '@/lib/get-articles'
 import { loadTales } from '@/lib/get-stories-from-notion'
-import { canonicalUrl, createSitemapXml } from '@/lib/seo'
+import {
+  ARTICLE_ARCHIVE_PAGE_SIZE,
+  articleArchivePath,
+  canonicalUrl,
+  createSitemapXml
+} from '@/lib/seo'
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -23,7 +28,15 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
       '/prikazki',
       '/dao',
       '/oracle',
-      '/content-calendar',
+      ...Array.from(
+        {
+          length: Math.max(
+            1,
+            Math.ceil(articles.length / ARTICLE_ARCHIVE_PAGE_SIZE)
+          )
+        },
+        (_, index) => articleArchivePath(index + 1)
+      ),
       ...tales.map((tale) => `/prikazki/${encodeURIComponent(tale.slug)}`),
       ...getTagCounts(articles).map(({ tag }) => `/tags/${tagToSlug(tag)}`)
     ]

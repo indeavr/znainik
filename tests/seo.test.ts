@@ -4,13 +4,16 @@ import { test } from 'node:test'
 import { type Block, type ExtendedRecordMap } from 'notion-types'
 
 import { type Article } from '../lib/get-articles'
-import { getPageDescription } from '../lib/get-page-meta'
+import { getPageDescription, getPageSeoText } from '../lib/get-page-meta'
 import { selectRelatedArticles } from '../lib/related-articles'
 import { createArticleFeed } from '../lib/rss-feed'
 import {
+  articleArchivePage,
+  articleArchivePath,
   canonicalUrl,
   createSitemapXml,
   isoDate,
+  seoDescription,
   serializeJsonLd
 } from '../lib/seo'
 
@@ -142,6 +145,85 @@ void test('missing descriptions fall back to body text, never to child-page titl
   )
   assert.equal(
     getPageDescription({ type: 'page' } as Block, recordMap),
+    undefined
+  )
+})
+
+void test('search descriptions keep complete sentences or shorten at a word boundary', () => {
+  assert.equal(seoDescription('  Кратък\n  текст.  '), 'Кратък текст.')
+  const sentence =
+    'Това е завършено изречение, което обяснява темата и дава достатъчно контекст на читателя за съзнателната практика в ежедневието.'
+  assert.equal(
+    seoDescription(`${sentence} ${'Допълнение '.repeat(20)}`),
+    sentence
+  )
+  const prose = 'внимание '.repeat(50)
+  const description = seoDescription(prose)
+  assert.ok(description.length <= 180)
+  assert.ok(description.endsWith('внимание…'))
+  assert.ok(!description.includes('\n'))
+})
+
+void test('article archive paths have distinct canonical pages and reject invalid page numbers', () => {
+  assert.equal(articleArchivePage(undefined), 1)
+  assert.equal(articleArchivePage([]), 1)
+  assert.equal(articleArchivePage(['2']), 2)
+  assert.equal(articleArchivePage(['02']), 2)
+  assert.equal(articleArchivePath(1), '/statii')
+  assert.equal(articleArchivePath(2), '/statii/2')
+  for (const segments of [
+    ['0'],
+    ['-1'],
+    ['1.5'],
+    ['NaN'],
+    ['a'],
+    ['2', '3'],
+    ['9007199254740992']
+  ]) {
+    assert.equal(articleArchivePage(segments), null)
+  }
+})
+
+void test('editorial SEO fields override metadata without rewriting article content', () => {
+  const block = {
+    id: 'page',
+    type: 'page',
+    parent_id: 'collection',
+    properties: {
+      title: [['Събуди Огъня']],
+      seoTitle: [[' Внимание и вътрешна практика ']],
+      seoDescription: [[' Описание\nза търсачките. ']],
+      description: [['Откъс за картите.']]
+    }
+  } as unknown as Extract<Block, { type: 'page' }>
+  const recordMap = {
+    collection: {
+      collection: {
+        value: {
+          id: 'collection',
+          schema: {
+            title: { name: 'Name', type: 'title' },
+            seoTitle: { name: 'SEO заглавие', type: 'text' },
+            seoDescription: { name: 'SEO Description', type: 'text' },
+            description: { name: 'Описание', type: 'text' }
+          }
+        }
+      }
+    },
+    block: {}
+  } as unknown as ExtendedRecordMap
+  assert.equal(
+    getPageSeoText(block, recordMap, 'title'),
+    'Внимание и вътрешна практика'
+  )
+  assert.equal(
+    getPageSeoText(block, recordMap, 'description'),
+    'Описание за търсачките.'
+  )
+  assert.equal(getPageDescription(block, recordMap), 'Откъс за картите.')
+  assert.deepEqual(block.properties?.title, [['Събуди Огъня']])
+  assert.equal(
+    getPageSeoText({ ...block, properties: { title: [] } }, recordMap, 'title'),
     undefined
   )
 })

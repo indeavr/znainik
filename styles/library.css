@@ -617,3 +617,35 @@
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+
+.zn-archive-title {
+  margin: 24px 0 12px;
+  font-family: var(--font-serif-stack);
+  font-size: clamp(36px, 5vw, 52px);
+  font-weight: 500;
+}
+.zn-archive-pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 36px;
+}
+.zn-archive-pages a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--fg-color);
+  background: var(--surface);
+  font-size: 14px;
+}
+.zn-archive-pages a:is(:hover, [aria-current='page']) {
+  color: var(--brand-strong);
+  border-color: var(--brand);
+}

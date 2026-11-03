@@ -18,7 +18,7 @@ import {
   getTagCounts,
   sortFeaturedArticles
 } from '@/lib/get-articles'
-import { serializeJsonLd } from '@/lib/seo'
+import { articleArchivePath, serializeJsonLd } from '@/lib/seo'
 
 interface HomeProps {
   articles: Article[]
@@ -127,7 +127,8 @@ export default function HomePage({ articles, tags }: HomeProps) {
     <div className='zn-page zn-library'>
       <PageHead
         site={site}
-        title={config.name}
+        url={`https://${site.domain}/`}
+        title='Знайник — статии за себепознание, внимание и Дао'
         description={config.description}
       />
       <script
@@ -329,6 +330,12 @@ export default function HomePage({ articles, tags }: HomeProps) {
                   Покажи още <span aria-hidden='true'>↓</span>
                 </button>
               )}
+              <Link
+                href={articleArchivePath()}
+                className='zn-library-text-link'
+              >
+                Всички статии <span aria-hidden='true'>→</span>
+              </Link>
             </div>
           )}
         </section>

@@ -336,6 +336,7 @@ function ContentCalendarPage() {
   return (
     <>
       <PageHead
+        noIndex
         title='30-дневен календар за съдържание | Знайник'
         description='Интерактивен 30-дневен календар с теми и идеи за създаване на съдържание.'
       />

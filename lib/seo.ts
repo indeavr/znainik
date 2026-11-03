@@ -14,6 +14,35 @@ export function isoDate(value: unknown): string | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
 }
 
+/** Search snippets use compact prose; the full editorial excerpt stays in cards. */
+export function seoDescription(value: string, maxLength = 180): string {
+  const text = value.replaceAll(/\s+/g, ' ').trim()
+  if (text.length <= maxLength) return text
+  const opening = text.slice(0, maxLength - 1)
+  const sentence = [...opening.matchAll(/[.!?](?=\s|$)/g)].at(-1)?.index
+  if (sentence !== undefined && sentence >= maxLength * 0.55) {
+    return opening.slice(0, sentence + 1)
+  }
+  const wordBoundary = opening.lastIndexOf(' ')
+  return `${opening.slice(0, wordBoundary > 0 ? wordBoundary : opening.length).trimEnd()}…`
+}
+
+export const ARTICLE_ARCHIVE_PAGE_SIZE = 12
+
+export function articleArchivePath(page = 1): string {
+  return page === 1 ? '/statii' : `/statii/${page}`
+}
+
+/** Stable, crawlable pages; never silently replace an invalid page with page one. */
+export function articleArchivePage(
+  segments: string[] | undefined
+): number | null {
+  if (!segments?.length) return 1
+  if (segments.length !== 1 || !/^\d+$/.test(segments[0]!)) return null
+  const page = Number(segments[0])
+  return Number.isSafeInteger(page) && page > 0 ? page : null
+}
+
 /** Prevent Notion text from terminating a JSON-LD script element. */
 export function serializeJsonLd(value: unknown): string {
   return JSON.stringify(value).replaceAll('<', '\\u003c')

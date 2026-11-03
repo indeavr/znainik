@@ -8,6 +8,24 @@ const AUTHOR_PROPS = ['Author', 'Автор', 'Written by', 'Написал', '�
 
 const DATE_PROPS = ['Published', 'Date', 'Дата', 'Публикувано', 'Публикуван']
 
+/** Optional editorial SEO fields do not change the article heading or card text. */
+export function getPageSeoText(
+  block: Block,
+  recordMap: ExtendedRecordMap,
+  field: 'title' | 'description'
+): string | undefined {
+  const names =
+    field === 'title'
+      ? ['SEO Title', 'SEO заглавие']
+      : ['SEO Description', 'SEO описание']
+  for (const name of names) {
+    const value = getPageProperty<string>(name, block, recordMap)
+    if (value && String(value).trim())
+      return String(value).replaceAll(/\s+/g, ' ').trim()
+  }
+  return undefined
+}
+
 export function getPageAuthorName(
   block: Block,
   recordMap: ExtendedRecordMap
