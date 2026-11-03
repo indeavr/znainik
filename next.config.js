@@ -30,6 +30,7 @@ const createNextConfig = (phase) =>
     },
     async redirects() {
       return [
+        { source: '/index', destination: '/', permanent: true },
         { source: '/feed.xml', destination: '/feed', permanent: true },
         { source: '/dao/page', destination: '/dao', permanent: true },
         {

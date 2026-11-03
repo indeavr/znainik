@@ -18,11 +18,13 @@ import { useSearchParam } from 'react-use'
 import type * as types from '@/lib/types'
 import { getAuthor } from '@/lib/authors'
 import * as config from '@/lib/config'
+import { getArticleTags } from '@/lib/get-articles'
 import { getNotionBlockValue } from '@/lib/get-notion-block-value'
 import {
   getPageAuthorName,
   getPageDescription,
-  getPagePublishedTimestamp
+  getPagePublishedTimestamp,
+  getPageSeoText
 } from '@/lib/get-page-meta'
 import { mapImageUrl } from '@/lib/map-image-url'
 import { getCanonicalPageUrl, mapPageUrl } from '@/lib/map-page-url'
@@ -340,11 +342,15 @@ export function NotionPage({
       <PageHead
         pageId={pageId}
         site={site}
-        title={title}
-        description={socialDescription}
+        title={getPageSeoText(block, recordMap, 'title') || title}
+        articleTitle={title}
+        description={
+          getPageSeoText(block, recordMap, 'description') || socialDescription
+        }
         image={coverImage}
         url={canonicalPageUrl}
         isBlogPost={isBlogPost}
+        topics={getArticleTags(block, recordMap)}
         authorName={author.name}
         publishedTime={getPagePublishedTimestamp(block, recordMap)}
         modifiedTime={block.last_edited_time}

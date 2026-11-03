@@ -2,8 +2,14 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 
 import type * as types from '@/lib/types'
+import { brand } from '@/lib/brand'
 import * as config from '@/lib/config'
-import { canonicalUrl, isoDate, serializeJsonLd } from '@/lib/seo'
+import {
+  canonicalUrl,
+  isoDate,
+  seoDescription,
+  serializeJsonLd
+} from '@/lib/seo'
 
 /**
  * PageHead renders SEO-critical head tags for every page.
@@ -23,6 +29,8 @@ export function PageHead({
   authorName,
   publishedTime,
   modifiedTime,
+  articleTitle,
+  topics = [],
   noIndex = false
 }: types.PageProps & {
   title?: string
@@ -33,6 +41,8 @@ export function PageHead({
   authorName?: string
   publishedTime?: number | null
   modifiedTime?: number | null
+  articleTitle?: string
+  topics?: string[]
   noIndex?: boolean
 }) {
   const router = useRouter()
@@ -45,7 +55,10 @@ export function PageHead({
     process.env.NEXT_PUBLIC_DEPLOYMENT_ENV !== 'production'
 
   title = title ?? site?.name ?? config.name
-  description = description ?? site?.description ?? config.description
+  description = seoDescription(
+    description ?? site?.description ?? config.description
+  )
+  const documentTitle = isBlogPost ? `${title} · ${brand.siteName}` : title
   const generatedImage = !image
   const socialImageUrl = image
     ? new URL(image, origin).toString()
@@ -59,13 +72,23 @@ export function PageHead({
     '@id': `${canonical}#article`,
     mainEntityOfPage: canonical,
     url: canonical,
-    headline: title,
+    headline: articleTitle || title,
     description,
     inLanguage: 'bg',
     datePublished,
     dateModified,
     author: { '@type': 'Person', name: authorName || config.author },
-    publisher: { '@type': 'Organization', name: config.name, url: origin },
+    publisher: {
+      '@type': 'Organization',
+      '@id': `${origin}/#publisher`,
+      name: config.name,
+      url: origin,
+      logo: {
+        '@type': 'ImageObject',
+        url: new URL(brand.logos.appIcon, origin).toString()
+      }
+    },
+    ...(topics.length ? { articleSection: topics } : {}),
     image: socialImageUrl
   }
 
@@ -162,7 +185,7 @@ export function PageHead({
       <meta name='twitter:title' content={title} />
       {/* Provide alt text for social image previews where supported */}
       {socialImageUrl && <meta property='og:image:alt' content={title} />}
-      <title>{title}</title>
+      <title>{documentTitle}</title>
 
       {isBlogPost && datePublished && (
         <meta property='article:published_time' content={datePublished} />
@@ -188,7 +211,7 @@ export function PageHead({
                 {
                   '@type': 'ListItem',
                   position: 2,
-                  name: title,
+                  name: articleTitle || title,
                   item: canonical
                 }
               ]
