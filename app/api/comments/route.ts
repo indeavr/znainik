@@ -1,4 +1,9 @@
-import { auth, isAuthConfigured } from '@/lib/auth'
+import {
+  authErrorResponse,
+  getSession,
+  readAuthBody,
+  requireSameOrigin
+} from '@/lib/auth'
 import { COMMENT_MAX_LENGTH } from '@/lib/comments'
 import {
   createComment,
@@ -42,30 +47,38 @@ export async function GET(req: Request) {
 
 /** POST /api/comments { pageId, body } — logged-in only */
 export async function POST(req: Request) {
-  if (!isEngagementPersisted || !isAuthConfigured) {
-    console.error(
-      '[znainik/comments] POST blocked — set POSTGRES_URL, NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET'
-    )
+  if (!isEngagementPersisted) {
+    console.error('[znainik/comments] POST blocked — set POSTGRES_URL')
     return Response.json({ error: 'unavailable' }, { status: 503 })
   }
 
-  const { data: session } = await auth.getSession()
+  let session
+  try {
+    requireSameOrigin(req)
+    session = await getSession(req)
+  } catch (err) {
+    return authErrorResponse(err)
+  }
   if (!session?.user) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const body = (await req.json()) as {
-    pageId?: string
-    text?: string
-    body?: string
+  let body
+  try {
+    body = await readAuthBody(req)
+  } catch (err) {
+    return authErrorResponse(err)
   }
-  const pageId = normalizeEngagementPageId(String(body.pageId ?? ''))
-  const text = String(body.body ?? body.text ?? '')
+  const pageId = normalizeEngagementPageId(
+    typeof body.pageId === 'string' ? body.pageId : ''
+  )
+  const rawText = body.body ?? body.text
+  const text = typeof rawText === 'string' ? rawText : ''
 
   if (!pageId) {
     return Response.json({ error: 'missing pageId' }, { status: 400 })
   }
-  if (!text.trim()) {
+  if (text.trim().replaceAll(/\s+/g, ' ').length < 2) {
     return Response.json({ error: 'empty comment' }, { status: 400 })
   }
   if (text.length > COMMENT_MAX_LENGTH) {
@@ -90,14 +103,18 @@ export async function POST(req: Request) {
 
 /** DELETE /api/comments?id=... — own comment only */
 export async function DELETE(req: Request) {
-  if (!isEngagementPersisted || !isAuthConfigured) {
-    console.error(
-      '[znainik/comments] DELETE blocked — set POSTGRES_URL, NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET'
-    )
+  if (!isEngagementPersisted) {
+    console.error('[znainik/comments] DELETE blocked — set POSTGRES_URL')
     return Response.json({ error: 'unavailable' }, { status: 503 })
   }
 
-  const { data: session } = await auth.getSession()
+  let session
+  try {
+    requireSameOrigin(req)
+    session = await getSession(req)
+  } catch (err) {
+    return authErrorResponse(err)
+  }
   if (!session?.user) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }

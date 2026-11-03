@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { authClient } from '@/lib/auth-client'
+import { signIn, signUp } from '@/lib/auth-client'
 
 type AuthMode = 'sign-in' | 'sign-up'
 
@@ -25,25 +25,19 @@ export function AuthPanel({
 
     try {
       if (mode === 'sign-up') {
-        const result = await authClient.signUp.email({
+        await signUp(
           email,
           password,
-          name: name.trim() || email.split('@')[0] || 'Читател'
-        })
-        if (result.error) {
-          setError(result.error.message ?? 'Регистрацията не успя')
-          return
-        }
+          name.trim() || email.split('@')[0] || 'Читател'
+        )
       } else {
-        const result = await authClient.signIn.email({ email, password })
-        if (result.error) {
-          setError(result.error.message ?? 'Грешен имейл или парола')
-          return
-        }
+        await signIn(email, password)
       }
       onSuccess?.()
-    } catch {
-      setError('Възникна грешка. Опитайте отново.')
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Възникна грешка. Опитайте отново.'
+      )
     } finally {
       setLoading(false)
     }
@@ -53,7 +47,7 @@ export function AuthPanel({
     <div className='zn-comments-auth'>
       <div className='zn-comments-panel-head'>
         <p className='zn-comments-auth-lead'>
-          Влезте, за да се присъедините към разговора.
+          Влез със своя профил в Guardian Circle, за да оставиш коментар.
         </p>
         {onCancel && (
           <button
@@ -121,20 +115,31 @@ export function AuthPanel({
               mode === 'sign-up' ? 'new-password' : 'current-password'
             }
             required
-            minLength={8}
+            minLength={mode === 'sign-up' ? 8 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder='минимум 8 символа'
+            placeholder={
+              mode === 'sign-up' ? 'минимум 8 символа' : 'Твоята парола'
+            }
           />
         </label>
 
-        {error && <p className='zn-comments-error'>{error}</p>}
+        {mode === 'sign-in' ? (
+          <a className='zn-comments-cancel' href='/api/auth/recovery'>
+            Забравена парола?
+          </a>
+        ) : (
+          <p className='zn-comments-auth-lead'>
+            Създаваш общ профил за Guardian Circle, Азайра и HWA.
+          </p>
+        )}
+        {error && (
+          <p className='zn-comments-error' role='alert'>
+            {error}
+          </p>
+        )}
 
-        <button
-          type='submit'
-          className='zn-comments-submit'
-          disabled={loading}
-        >
+        <button type='submit' className='zn-comments-submit' disabled={loading}>
           {loading
             ? 'Момент...'
             : mode === 'sign-up'
