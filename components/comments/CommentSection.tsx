@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { authClient } from '@/lib/auth-client'
+import { signOut, useAuthSession } from '@/lib/auth-client'
 import { type Comment, COMMENT_MAX_LENGTH } from '@/lib/comments'
 import { normalizeEngagementPageId } from '@/lib/engagement'
 
@@ -30,7 +30,7 @@ export function CommentSection({ pageId }: { pageId: string }) {
     () => normalizeEngagementPageId(pageId),
     [pageId]
   )
-  const { data: session, isPending } = authClient.useSession()
+  const { session, isPending, error: sessionError } = useAuthSession()
 
   const [comments, setComments] = React.useState<Comment[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -99,9 +99,7 @@ export function CommentSection({ pageId }: { pageId: string }) {
       setDraft('')
       setComposeOpen(false)
     } catch (err: unknown) {
-      setFormError(
-        err instanceof Error ? err.message : 'Неуспешно изпращане'
-      )
+      setFormError(err instanceof Error ? err.message : 'Неуспешно изпращане')
     } finally {
       setSubmitting(false)
     }
@@ -119,9 +117,13 @@ export function CommentSection({ pageId }: { pageId: string }) {
   }
 
   async function onSignOut() {
-    await authClient.signOut()
-    setComposeOpen(false)
-    setDraft('')
+    try {
+      await signOut()
+      setComposeOpen(false)
+      setDraft('')
+    } catch {
+      setFormError('Изходът не успя. Опитай отново.')
+    }
   }
 
   function openCompose() {
@@ -154,6 +156,12 @@ export function CommentSection({ pageId }: { pageId: string }) {
           <span className='zn-comments-count'>{comments.length}</span>
         )}
       </header>
+
+      {sessionError && (
+        <p className='zn-comments-error' role='alert'>
+          {sessionError}
+        </p>
+      )}
 
       {!isPending && (
         <div className='zn-comments-compose-area' ref={panelRef}>
