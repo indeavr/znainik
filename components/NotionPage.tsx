@@ -44,6 +44,7 @@ import { PageHead } from './PageHead'
 import { RelatedPosts } from './RelatedPosts'
 import { ShareButtons } from './ShareButtons'
 import styles from './styles.module.css'
+import { ZoomGuard } from './ZoomGuard'
 
 // -----------------------------------------------------------------------------
 // dynamic imports for optional components
@@ -356,6 +357,7 @@ export function NotionPage({
         modifiedTime={block.last_edited_time}
       />
 
+      <ZoomGuard />
       {isLiteMode && <BodyClassName className='notion-lite' />}
       {darkModeForDom && <BodyClassName className='dark-mode' />}
 

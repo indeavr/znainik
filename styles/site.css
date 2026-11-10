@@ -1592,3 +1592,12 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Zoomed article images stay clear of the iPhone status bar and home indicator. */
+.medium-zoom-overlay {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.medium-zoom-image--opened {
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
