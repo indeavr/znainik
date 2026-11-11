@@ -1,26 +1,21 @@
 import { type Block, type ExtendedRecordMap } from 'notion-types'
 
-import { getPageTweet } from '@/lib/get-page-tweet'
-
-import { PageActions } from './PageActions'
 import { PageSocial } from './PageSocial'
 
+/**
+ * The aside beside a page. Articles keep only their contents list: the old Twitter like and
+ * retweet buttons pointed people away from Знайник.
+ */
 export function PageAside({
   block,
-  recordMap,
   isBlogPost
 }: {
   block: Block
   recordMap: ExtendedRecordMap
   isBlogPost: boolean
 }) {
-  if (!block) {
+  if (!block || isBlogPost) {
     return null
-  }
-
-  if (isBlogPost) {
-    const tweet = getPageTweet(block, recordMap)
-    return tweet ? <PageActions tweet={tweet} /> : null
   }
 
   return <PageSocial />
