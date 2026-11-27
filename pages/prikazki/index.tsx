@@ -16,7 +16,6 @@ import { TvoreyaShowcase } from '@/components/tales/TvoreyaShowcase'
 import { site } from '@/lib/config'
 import { loadTales } from '@/lib/get-stories-from-notion'
 import {
-  ATLAS_URL,
   matchShowcaseTale,
   SHOWCASE_ORDER,
   type ShowcaseTaleId
@@ -126,20 +125,8 @@ export default function PrikazkiIndex({ series, others }: PrikazkiIndexProps) {
         <TvoreyaShowcase online={series.tvoreya} />
         <AmbriaShowcase online={series.ambria} />
 
-        <section className='zn-container tl-outro'>
-          <p className='tl-outro-text'>
-            Земите, епохите и създанията на Азайра са събрани в атласа на света.
-          </p>
-          <a
-            className='tl-btn tl-btn-primary'
-            href={`${ATLAS_URL}#home`}
-            target='_blank'
-            rel='noopener noreferrer'
-          >
-            Отвори атласа <span aria-hidden='true'>↗</span>
-          </a>
-
-          {others.length > 0 && (
+        {others.length > 0 && (
+          <section className='zn-container tl-outro'>
             <div className='tl-others'>
               <h2 className='tl-others-title'>Още за четене</h2>
               <ul>
@@ -152,8 +139,8 @@ export default function PrikazkiIndex({ series, others }: PrikazkiIndexProps) {
                 ))}
               </ul>
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </main>
 
       <Footer />

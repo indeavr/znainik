@@ -1,6 +1,4 @@
-import Link from 'next/link'
-
-import { ATLAS_URL, AZAIRA, COVERS } from '@/lib/tale-showcase'
+import { AZAIRA, COVERS } from '@/lib/tale-showcase'
 
 import { BookCover } from './BookCover'
 import { OnlineLinks, type OnlineSeries } from './OnlineLinks'
@@ -8,8 +6,6 @@ import { StarSymbol } from './TaleSymbols'
 
 /** „Азайра“: the mythology as a star codex. */
 export function AzairaShowcase({ online }: { online: OnlineSeries[] }) {
-  const canonical = online[0]
-
   return (
     <section
       id='azaira'
@@ -50,20 +46,14 @@ export function AzairaShowcase({ online }: { online: OnlineSeries[] }) {
               <p className='tl-az-forces-tail'>{AZAIRA.forcesTail}</p>
             </blockquote>
 
-            <div className='tl-actions'>
-              <a
-                className='tl-btn tl-btn-primary'
-                href={`${ATLAS_URL}#home`}
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                Разгледай атласа на света <span aria-hidden='true'>↗</span>
-              </a>
-              <OnlineLinks
-                series={online}
-                label={(s) => `Прочети „${s.title}“`}
-              />
-            </div>
+            {online.length > 0 && (
+              <div className='tl-actions'>
+                <OnlineLinks
+                  series={online}
+                  label={(s) => `Прочети „${s.title}“`}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -167,42 +157,15 @@ export function AzairaShowcase({ online }: { online: OnlineSeries[] }) {
         <div className='tl-contents tl-az-contents'>
           <h3 className='tl-contents-title'>Съдържание на света</h3>
           <ol className='tl-az-codex'>
-            {AZAIRA.contents.map((item) => {
-              const href = item.online
-                ? canonical
-                  ? `/prikazki/${canonical.slug}`
-                  : undefined
-                : `${ATLAS_URL}#${item.atlas}`
-              const body = (
-                <>
-                  <span className='tl-az-codex-numeral'>{item.numeral}</span>
-                  <span className='tl-az-codex-body'>
-                    <span className='tl-az-codex-title'>{item.title}</span>
-                    <span className='tl-az-codex-text'>{item.text}</span>
-                  </span>
-                </>
-              )
-              return (
-                <li key={item.numeral}>
-                  {!href ? (
-                    <span className='tl-az-codex-row'>{body}</span>
-                  ) : item.online ? (
-                    <Link className='tl-az-codex-row' href={href}>
-                      {body}
-                    </Link>
-                  ) : (
-                    <a
-                      className='tl-az-codex-row'
-                      href={href}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                    >
-                      {body}
-                    </a>
-                  )}
-                </li>
-              )
-            })}
+            {AZAIRA.contents.map((item) => (
+              <li key={item.numeral} className='tl-az-codex-row'>
+                <span className='tl-az-codex-numeral'>{item.numeral}</span>
+                <span className='tl-az-codex-body'>
+                  <span className='tl-az-codex-title'>{item.title}</span>
+                  <span className='tl-az-codex-text'>{item.text}</span>
+                </span>
+              </li>
+            ))}
           </ol>
         </div>
       </div>

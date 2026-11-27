@@ -1,4 +1,4 @@
-import { COVERS, TVOREYA } from '@/lib/tale-showcase'
+import { COURSE_URLS, COVERS, TVOREYA } from '@/lib/tale-showcase'
 
 import { BookCover } from './BookCover'
 import { OnlineLinks, type OnlineSeries } from './OnlineLinks'
@@ -68,18 +68,18 @@ export function TvoreyaShowcase({ online }: { online: OnlineSeries[] }) {
             </ul>
 
             <div className='tl-actions'>
+              <a
+                className='tl-btn tl-btn-primary'
+                href={COURSE_URLS.tvoreya}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                Школата „Раз-Твори се“ <span aria-hidden='true'>↗</span>
+              </a>
               <OnlineLinks
                 series={online}
                 label={() => 'Чети епизодите онлайн'}
               />
-              <a
-                className='tl-btn tl-btn-ghost'
-                href={TVOREYA.storyUrl}
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                Героите на azaira.bg <span aria-hidden='true'>↗</span>
-              </a>
             </div>
           </div>
         </div>
