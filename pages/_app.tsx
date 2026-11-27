@@ -9,6 +9,7 @@ import 'styles/prism-theme.css' // global style overrides for prism theme (optio
 import 'styles/site.css' // marketing / knowledge-base UI (home, tags, palette, etc.)
 import 'styles/library.css' // curated article library
 import 'styles/story.css' // interactive story-game experience (приказки)
+import 'styles/tales.css' // the four tales on /prikazki
 import 'styles/comments.css' // community comments + auth
 
 import type * as Fathom from 'fathom-client'
