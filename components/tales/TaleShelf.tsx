@@ -9,13 +9,13 @@ import { BookCover } from './BookCover'
 export function TaleShelf() {
   return (
     <ul className='tl-shelf' aria-label='Четирите приказки'>
-      {SHELF.map((tale, index) => (
+      {SHELF.map((tale) => (
         <li key={tale.id} className={`tl-shelf-item tl-shelf-${tale.id}`}>
           <a href={`#${tale.id}`} className='tl-shelf-link'>
             <BookCover
               cover={tale.cover}
               sizes='(max-width: 640px) 24vw, 200px'
-              priority={index < 2}
+              priority
             />
             <span className='tl-shelf-name'>{tale.name}</span>
             <span className='tl-shelf-tag'>{tale.tag}</span>
