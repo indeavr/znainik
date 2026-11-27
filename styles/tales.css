@@ -952,10 +952,9 @@
 }
 
 .tl-az-epoch-here {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: 2px;
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 0.68rem;

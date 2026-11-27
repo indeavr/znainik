@@ -147,11 +147,13 @@ export function AzairaShowcase({ online }: { online: OnlineSeries[] }) {
                     />
                     <span className='tl-az-epoch-numeral'>{epoch.numeral}</span>
                   </span>
-                  <span className='tl-az-epoch-plain'>{epoch.plain}</span>
+                  <span className='tl-az-epoch-plain'>
+                    {epoch.plain}
+                    {'here' in epoch && (
+                      <span className='tl-az-epoch-here'>{epoch.here}</span>
+                    )}
+                  </span>
                   <span className='tl-az-epoch-name'>{epoch.name}</span>
-                  {'here' in epoch && (
-                    <span className='tl-az-epoch-here'>{epoch.here}</span>
-                  )}
                 </li>
               ))}
             </ol>
