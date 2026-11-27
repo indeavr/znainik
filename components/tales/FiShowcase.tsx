@@ -1,4 +1,4 @@
-import { ATLAS_URL, COVERS, FI } from '@/lib/tale-showcase'
+import { COURSE_URLS, COVERS, FI } from '@/lib/tale-showcase'
 
 import { BookCover } from './BookCover'
 import { OnlineLinks, type OnlineSeries } from './OnlineLinks'
@@ -64,11 +64,12 @@ export function FiShowcase({ online }: { online: OnlineSeries[] }) {
             <div className='tl-actions'>
               <a
                 className='tl-btn tl-btn-primary'
-                href={`${ATLAS_URL}#fi`}
+                href={COURSE_URLS.fi}
                 target='_blank'
                 rel='noopener noreferrer'
               >
-                „Фи“ в атласа на света <span aria-hidden='true'>↗</span>
+                Обучението „Изкуството на Паузата“{' '}
+                <span aria-hidden='true'>↗</span>
               </a>
               <OnlineLinks
                 series={online}

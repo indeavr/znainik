@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import {
   AMBRIA,
   AZAIRA,
+  COURSE_URLS,
   COVERS,
   FI,
   matchShowcaseTale,
@@ -102,6 +103,14 @@ void test('no names borrowed from other works', () => {
       assert.doesNotMatch(text, pattern)
     }
   }
+})
+
+void test('the page links only to the courses, never to the atlas', () => {
+  for (const text of ALL_TEXT) {
+    assert.doesNotMatch(text, /svyat/u)
+  }
+  assert.equal(COURSE_URLS.fi, 'https://azaira.bg/phi/pauza')
+  assert.equal(COURSE_URLS.tvoreya, 'https://azaira.bg/raz-tvori-se')
 })
 
 void test('no page counts, prices or dates the sources do not agree on', () => {
