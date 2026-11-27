@@ -105,6 +105,33 @@ void test('no names borrowed from other works', () => {
   }
 })
 
+void test('eight forces around Азайра, the sleeping titan', () => {
+  // The author's call: eight forces, nine with Азайра. She is a titan
+  // („титан“, not „титанка“), and the Earth's soul is Азайра, not Кибеа.
+  const forces = [
+    'Светлина',
+    'Празнота',
+    'Ред',
+    'Хаос',
+    'Живот',
+    'Смърт',
+    'Топлина',
+    'Студ'
+  ]
+  for (const force of forces) {
+    assert.ok(AZAIRA.forces.includes(force), `${force} is missing`)
+    assert.ok(AZAIRA.contents[0]!.text.includes(force), `${force} not listed`)
+  }
+  assert.ok(
+    AZAIRA.stats.some(
+      (stat) => stat.value === '8' && stat.label === 'космически сили'
+    )
+  )
+  for (const text of ALL_TEXT) {
+    assert.doesNotMatch(text, /титанка|Кибеа/u)
+  }
+})
+
 void test('the page links only to the courses, never to the atlas', () => {
   for (const text of ALL_TEXT) {
     assert.doesNotMatch(text, /svyat/u)
