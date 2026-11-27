@@ -42,6 +42,13 @@
   margin: 0.45em auto 0.3em;
 }
 
+/* Keep the page still: no shimmer on the hero word (it made gradient text
+   blink in Safari next to the animated layers). */
+.tl-hero .zn-hero-gradient {
+  animation: none;
+  filter: none;
+}
+
 .tl-hero-sub {
   max-width: 50ch;
   margin: 0 auto;
@@ -605,16 +612,6 @@
       transparent 2px
     );
   background-size: 300px 260px;
-  animation: tl-twinkle 7s ease-in-out infinite alternate;
-}
-
-@keyframes tl-twinkle {
-  from {
-    opacity: 0.45;
-  }
-  to {
-    opacity: 0.85;
-  }
 }
 
 .tl-az-title {
@@ -626,7 +623,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 22px rgba(241, 207, 131, 0.28));
 }
 
 .tl-azaira .tl-logline {
@@ -745,13 +741,6 @@
   border-radius: 50%;
   border: 1px dashed rgba(230, 192, 110, 0.5);
   box-shadow: 0 0 60px rgba(120, 90, 220, 0.25) inset;
-  animation: tl-spin 140s linear infinite;
-}
-
-@keyframes tl-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .tl-az-core {
@@ -1106,16 +1095,6 @@
   opacity: 0.75;
   z-index: 0;
   pointer-events: none;
-  animation: tl-spiral 160s linear infinite;
-}
-
-@keyframes tl-spiral {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
 }
 
 .tl-fi-phi {
@@ -2079,12 +2058,4 @@
   background: var(--surface);
   color: var(--fg-color);
   text-decoration: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tl-az-stars,
-  .tl-az-ring,
-  .tl-fi-spiral {
-    animation: none;
-  }
 }
