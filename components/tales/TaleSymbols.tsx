@@ -118,7 +118,7 @@ export function GoldenSpiral({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      viewBox='-420 -420 840 840'
+      viewBox='-112 -412 374 578'
       fill='none'
       aria-hidden='true'
     >
