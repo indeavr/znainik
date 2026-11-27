@@ -1,4 +1,4 @@
-import { AMBRIA, ATLAS_URL, COVERS } from '@/lib/tale-showcase'
+import { AMBRIA, COVERS } from '@/lib/tale-showcase'
 
 import { BookCover } from './BookCover'
 import { OnlineLinks, type OnlineSeries } from './OnlineLinks'
@@ -46,17 +46,11 @@ export function AmbriaShowcase({ online }: { online: OnlineSeries[] }) {
               ))}
             </ul>
 
-            <div className='tl-actions'>
-              <a
-                className='tl-btn tl-btn-primary'
-                href={`${ATLAS_URL}#ambria`}
-                target='_blank'
-                rel='noopener noreferrer'
-              >
-                Амбриа в атласа на света <span aria-hidden='true'>↗</span>
-              </a>
-              <OnlineLinks series={online} label={() => 'Чети онлайн'} />
-            </div>
+            {online.length > 0 && (
+              <div className='tl-actions'>
+                <OnlineLinks series={online} label={() => 'Чети онлайн'} />
+              </div>
+            )}
           </div>
         </div>
 

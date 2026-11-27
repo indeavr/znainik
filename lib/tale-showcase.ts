@@ -2,7 +2,7 @@
  * The four tales on /prikazki: covers, contents, what each tale is about.
  *
  * Sources (read 27.11.2026):
- * - azaira repo, `lib/world-atlas/*` (the atlas at azaira.bg/svyat);
+ * - azaira repo, `lib/world-atlas/*` (the world atlas);
  * - the print books „Фи“ and „Творея“, Книга първа (tables of contents,
  *   the back cover of „Творея“);
  * - the Notion page „Приключенията на Азайра“, public in Znainik.
@@ -20,7 +20,11 @@ export const SHOWCASE_ORDER: ShowcaseTaleId[] = [
   'ambria'
 ]
 
-export const ATLAS_URL = 'https://azaira.bg/svyat'
+/** The courses on azaira.bg that grow out of the tales. */
+export const COURSE_URLS = {
+  fi: 'https://azaira.bg/phi/pauza',
+  tvoreya: 'https://azaira.bg/raz-tvori-se'
+} as const
 
 export interface TaleCover {
   /** 480px wide WebP. */
@@ -170,62 +174,52 @@ export const AZAIRA = {
       image: '07-unknown'
     }
   ],
-  /** The world as a codex. `online` items open the text in Znainik. */
+  /** The world as a codex, to look through (no links). */
   contents: [
     {
       numeral: 'I',
       title: 'Космологията',
-      text: 'Светлина и Празнота, Ред и Хаос, Живот и Смърт.',
-      atlas: 'cosmology'
+      text: 'Светлина и Празнота, Ред и Хаос, Живот и Смърт.'
     },
     {
       numeral: 'II',
       title: 'Седемте епохи',
-      text: 'От Единството до Ерата на Звездата.',
-      atlas: 'epochs'
+      text: 'От Единството до Ерата на Звездата.'
     },
     {
       numeral: 'III',
       title: 'Титаните',
-      text: 'Седем пробудени, от Луната до Сатурн. Азайра още спи.',
-      atlas: 'titans'
+      text: 'Седем пробудени, от Луната до Сатурн. Азайра още спи.'
     },
     {
       numeral: 'IV',
       title: 'Първопредците',
-      text: 'Драконът, Фениксът, Белият тигър и Черната костенурка.',
-      atlas: 'primordials'
+      text: 'Драконът, Фениксът, Белият тигър и Черната костенурка.'
     },
     {
       numeral: 'V',
       title: 'Драконовите родове',
-      text: 'Пет цвята пазят Живот, Природа и Сън, Магия, Време и Земя.',
-      atlas: 'aspects'
+      text: 'Пет цвята пазят Живот, Природа и Сън, Магия, Време и Земя.'
     },
     {
       numeral: 'VI',
       title: 'Земите',
-      text: '45 места на картата, от Сандрия до горите на Хиджау.',
-      atlas: 'map'
+      text: '45 места на картата, от Сандрия до горите на Хиджау.'
     },
     {
       numeral: 'VII',
       title: 'Петте роли',
-      text: 'Визионер, Войн, Лечител, Учител и Повелител.',
-      online: true
+      text: 'Визионер, Войн, Лечител, Учител и Повелител.'
     },
     {
       numeral: 'VIII',
       title: 'Стражите на прага',
-      text: 'Времетрон, стражът на материята, и Луминар, светлоносецът.',
-      online: true
+      text: 'Времетрон, стражът на материята, и Луминар, светлоносецът.'
     }
   ] as Array<{
     numeral: string
     title: string
     text: string
-    atlas?: string
-    online?: boolean
   }>
 } as const
 
@@ -518,8 +512,7 @@ export const TVOREYA = {
     { id: 'fibonachko', name: 'Фибоначко', gift: 'Ритъмът и търпението' },
     { id: 'holagrama', name: 'Хола', gift: 'Цялото в частта' },
     { id: 'tvoreya', name: 'Творея', gift: 'Раждането' }
-  ],
-  storyUrl: 'https://azaira.bg/raz-tvori-se/prikazka'
+  ]
 }
 
 /* -------------------------------------------------------------------------- */
